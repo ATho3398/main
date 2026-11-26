@@ -9,11 +9,12 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap">
 <style>
-/* Layout: one-screen workbench. A lit stage on the left, a narrow instrument column on the right; stacks on phones. */
+/* Layout: one-screen workbench. A lit stage with a film strip on the left, a narrow instrument column on the right; stacks on phones. */
 :root{
   --bg:#EDEFF2; --surface:#FFFFFF; --soft:#F4F5F7; --ink:#16181D; --muted:#5C6371; --line:#D8DCE3;
   --stage:#E1E4E9; --check-a:#F8F9FA; --check-b:#E2E5EA;
   --accent:#D4520E; --accent-ink:#FFFFFF; --accent-soft:#FBE6DA; --danger:#B42318;
+  --pv-light:#FFFFFF; --pv-dark:#121316;
   --font-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --font-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
   --font-display:"Space Grotesk","IBM Plex Sans KR",system-ui,sans-serif;
@@ -35,7 +36,7 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.45}
 button,input,select{font:inherit;color:inherit}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
@@ -49,7 +50,7 @@ button,input,select{font:inherit;color:inherit}
 .mark::after{content:"";position:absolute;inset:3px;background:var(--accent);border-radius:1px}
 .brand b{font-family:var(--font-display);font-weight:600;font-size:17px;letter-spacing:-.01em}
 .brand span{color:var(--muted);font-size:13px}
-.group{display:flex;gap:6px;align-items:center}
+.group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--line);
   background:var(--surface);border-radius:7px;cursor:pointer;white-space:nowrap;font-weight:500}
@@ -64,16 +65,38 @@ button,input,select{font:inherit;color:inherit}
 .btn.wide{width:100%}
 
 /* workbench */
-.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:12px}
+.work{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 340px;grid-template-rows:minmax(0,1fr);gap:12px}
 .stage{position:relative;background:var(--stage);border-radius:10px;display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .viewport{flex:1;min-height:0;position:relative;display:flex;align-items:center;justify-content:center;padding:28px;overflow:hidden}
 #view{display:block;max-width:100%;
   background-color:var(--check-a);
   background-image:conic-gradient(var(--check-b) 25%,transparent 0 50%,var(--check-b) 0 75%,transparent 0);
   background-size:16px 16px;box-shadow:0 0 0 1px var(--line)}
-.stage-info{display:flex;flex-wrap:wrap;gap:4px 16px;padding:8px 14px;border-top:1px solid var(--line);
+.stage[data-pv="light"] #view{background:var(--pv-light)}
+.stage[data-pv="dark"] #view{background:var(--pv-dark)}
+.stage-info{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:8px 14px;border-top:1px solid var(--line);
   font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--surface)}
 .stage-info .tag{color:var(--accent);font-family:var(--font-body);font-weight:500}
+.pvsel{margin-left:auto;display:flex;align-items:center;gap:4px;font-family:var(--font-body)}
+.pvsel button{width:20px;height:20px;border-radius:4px;border:1px solid var(--line);cursor:pointer;padding:0}
+.pvsel button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
+.pv-c{background-color:var(--check-a);background-image:conic-gradient(var(--check-b) 25%,transparent 0 50%,var(--check-b) 0 75%,transparent 0);background-size:8px 8px}
+.pv-l{background:var(--pv-light)}.pv-d{background:var(--pv-dark)}
+
+/* film strip */
+.strip{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface);align-items:center}
+.thumb{position:relative;flex:none;width:60px;height:60px;border-radius:6px;overflow:hidden;border:2px solid transparent;cursor:pointer;padding:0;
+  background-color:var(--check-a);background-image:conic-gradient(var(--check-b) 25%,transparent 0 50%,var(--check-b) 0 75%,transparent 0);background-size:8px 8px}
+.thumb[aria-current="true"]{border-color:var(--accent)}
+.thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.thumb .x{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(10,11,14,.7);color:#fff;
+  font-size:13px;line-height:18px;text-align:center;opacity:0}
+.thumb:hover .x,.thumb:focus-visible .x{opacity:1}
+@media (hover:none){.thumb .x{opacity:1}}
+.thumb .badge{position:absolute;left:3px;bottom:3px;font:10px/1 var(--font-body);background:var(--accent);color:var(--accent-ink);padding:2px 4px;border-radius:3px}
+.addtile{flex:none;width:60px;height:60px;border-radius:6px;border:1.5px dashed var(--line);display:grid;place-items:center;color:var(--muted);cursor:pointer;font-size:22px;background:transparent}
+.addtile:hover{border-color:var(--accent);color:var(--accent)}
+.strip .count{flex:none;font-size:12px;color:var(--muted);padding-right:4px;font-variant-numeric:tabular-nums}
 
 /* crop overlay */
 .cropwrap{position:relative;touch-action:none;user-select:none;-webkit-user-select:none;overflow:hidden;cursor:crosshair;flex:none}
@@ -93,8 +116,16 @@ button,input,select{font:inherit;color:inherit}
 
 .drop{position:absolute;inset:10px;border:2px dashed var(--accent);border-radius:8px;background:color-mix(in srgb,var(--stage) 80%,transparent);
   display:flex;align-items:center;justify-content:center;font-weight:600;font-size:16px;color:var(--ink);pointer-events:none}
-.toast{position:absolute;left:50%;bottom:52px;transform:translateX(-50%);max-width:calc(100% - 32px);background:var(--ink);color:var(--bg);
-  padding:9px 14px;border-radius:8px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .2s}
+.busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;
+  background:color-mix(in srgb,var(--stage) 78%,transparent);backdrop-filter:blur(2px);z-index:5;text-align:center;padding:16px}
+.busy b{font-weight:600}
+.busy small{color:var(--muted);max-width:32ch}
+.meter{width:min(260px,70%);height:6px;border-radius:99px;background:var(--line);overflow:hidden}
+.meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+.meter.indet i{width:35%;animation:slide 1.1s ease-in-out infinite}
+@keyframes slide{0%{transform:translateX(-100%)}100%{transform:translateX(290%)}}
+.toast{position:absolute;left:50%;bottom:96px;transform:translateX(-50%);max-width:calc(100% - 32px);background:var(--ink);color:var(--bg);
+  padding:9px 14px;border-radius:8px;font-size:13px;box-shadow:0 6px 24px rgba(0,0,0,.25);pointer-events:none;opacity:0;transition:opacity .2s;z-index:6}
 .toast.show{opacity:1}
 .toast.err{background:var(--danger);color:#fff}
 
@@ -102,11 +133,14 @@ button,input,select{font:inherit;color:inherit}
 .panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-y:auto;min-height:0;min-width:0}
 .sec{padding:14px 16px 16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
 .sec:last-child{border-bottom:0}
-.sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
-.sec-h h2{margin:0;font-size:13.5px;font-weight:600}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sec-h h2{margin:0;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.scope{font-size:10.5px;font-weight:500;padding:1px 6px;border-radius:999px;border:1px solid var(--line);color:var(--muted);letter-spacing:.02em}
+.scope.each{border-color:var(--accent);color:var(--accent)}
 .sum{font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;text-align:right}
 .sum.on{color:var(--accent)}
 .hint{margin:0;font-size:12px;color:var(--muted)}
+.hint b{color:var(--ink);font-weight:500}
 
 .field{display:grid;grid-template-columns:58px minmax(0,1fr) 68px;align-items:center;gap:10px}
 .field>label{font-size:12.5px;color:var(--muted)}
@@ -130,6 +164,8 @@ input[type=color]{inline-size:34px;block-size:28px;padding:2px;border:1px solid 
 .lbl{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);min-width:0}
 .row{display:flex;gap:6px;flex-wrap:wrap}
 .row>.btn{flex:1}
+.check{display:flex;align-items:center;gap:8px;font-size:12.5px;cursor:pointer}
+.check input{accent-color:var(--accent);width:15px;height:15px;margin:0}
 
 .lockbtn{height:30px;width:30px;border:1px solid var(--line);border-radius:6px;background:var(--soft);cursor:pointer;display:grid;place-items:center}
 .lockbtn svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round}
@@ -139,27 +175,32 @@ input[type=color]{inline-size:34px;block-size:28px;padding:2px;border:1px solid 
 .switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
 .switch:checked{background:var(--accent)}
 .switch:checked::after{transform:translateX(16px)}
+.switch:disabled{opacity:.4;cursor:default}
+.swl{display:flex;align-items:center;gap:8px}
 fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;min-width:0}
 fieldset:disabled{opacity:.45}
 
-.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:7px;overflow:hidden}
-.seg label{display:flex;align-items:center;justify-content:center;height:32px;cursor:pointer;font-family:var(--font-mono);font-size:12.5px;border-left:1px solid var(--line)}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;border:1px solid var(--line);border-radius:7px;overflow:hidden}
+.seg label{position:relative;display:flex;align-items:center;justify-content:center;height:32px;cursor:pointer;font-size:12.5px;border-left:1px solid var(--line);padding:0 6px;text-align:center}
+.seg.mono label{font-family:var(--font-mono)}
 .seg label:first-child{border-left:0}
 .seg input{position:absolute;opacity:0;pointer-events:none}
 .seg input:checked+span{color:var(--accent);font-weight:500}
 .seg label:has(input:checked){background:var(--accent-soft)}
 .seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.status{font-size:12px;padding:7px 10px;border-radius:6px;background:var(--soft);color:var(--muted)}
+.status.on{background:var(--accent-soft);color:var(--ink)}
 
 @media (max-width:820px){
   html,body{height:auto}
   .app{height:auto}
-  .work{grid-template-columns:minmax(0,1fr)}
-  .stage{height:56vh;min-height:300px}
+  .work{grid-template-columns:minmax(0,1fr);grid-template-rows:auto}
+  .stage{height:62vh;min-height:340px}
   .viewport{padding:16px}
   .panel{overflow:visible}
   .brand span{display:none}
 }
-@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
@@ -168,17 +209,17 @@ fieldset:disabled{opacity:.45}
   <header class="bar">
     <div class="brand"><div class="mark" aria-hidden="true"></div><b>Lightbox</b><span>사진 편집기</span></div>
     <div class="group">
-      <label class="btn" for="file">사진 열기</label>
-      <input type="file" id="file" accept="image/*" hidden>
+      <label class="btn" for="file">사진 추가</label>
+      <input type="file" id="file" accept="image/*" multiple hidden>
       <button class="btn icon" id="undo" title="되돌리기 (Ctrl+Z)" aria-label="되돌리기"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
       <button class="btn icon" id="redo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
-      <button class="btn" id="resetAll" title="모든 편집을 지우고 원본으로">원본으로</button>
+      <button class="btn" id="resetAll" title="이 사진의 자르기·크기와 모든 효과를 처음 상태로">초기화</button>
       <button class="btn primary" id="saveTop">저장</button>
     </div>
   </header>
 
   <main class="work">
-    <section class="stage" aria-label="미리보기">
+    <section class="stage" id="stage" aria-label="미리보기">
       <div class="viewport" id="viewport">
         <canvas id="view"></canvas>
         <div class="cropwrap" id="cropwrap" hidden>
@@ -191,16 +232,24 @@ fieldset:disabled{opacity:.45}
             <div class="h" data-h="se"></div><div class="h" data-h="s"></div><div class="h" data-h="sw"></div><div class="h" data-h="w"></div>
           </div>
         </div>
-        <div class="drop" id="drop" hidden>여기에 놓으면 사진을 엽니다</div>
+        <div class="drop" id="drop" hidden>여기에 놓으면 사진을 추가합니다</div>
       </div>
+      <div class="busy" id="busy" hidden><b id="busyT"></b><div class="meter" id="busyM"><i id="busyBar"></i></div><small id="busyS"></small></div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
-      <footer class="stage-info" id="info"></footer>
+      <footer class="stage-info"><span id="info" style="display:contents"></span>
+        <span class="pvsel" role="group" aria-label="미리보기 바탕">바탕
+          <button class="pv-c" data-pv="checker" aria-label="체크무늬" title="체크무늬 (투명 부분 확인)"></button>
+          <button class="pv-l" data-pv="light" aria-label="흰색" title="흰색"></button>
+          <button class="pv-d" data-pv="dark" aria-label="검정" title="검정"></button>
+        </span>
+      </footer>
+      <div class="strip" id="strip" aria-label="사진 목록"></div>
     </section>
 
     <aside class="panel" aria-label="편집 도구">
       <!-- crop -->
       <section class="sec">
-        <div class="sec-h"><h2>자르기</h2><span class="sum" id="sumCrop"></span></div>
+        <div class="sec-h"><h2>자르기 <span class="scope each" data-scope>사진별</span></h2><span class="sum" id="sumCrop"></span></div>
         <div class="chips" id="ratios">
           <button class="chip ko" data-ratio="free">자유</button>
           <button class="chip ko" data-ratio="orig">원본</button>
@@ -228,7 +277,7 @@ fieldset:disabled{opacity:.45}
 
       <!-- resize -->
       <section class="sec">
-        <div class="sec-h"><h2>크기</h2><span class="sum" id="sumSize"></span></div>
+        <div class="sec-h"><h2>크기 <span class="scope each" data-scope>사진별</span></h2><span class="sum" id="sumSize"></span></div>
         <div class="grid2">
           <label class="lbl">너비 (px)<input class="num" id="ow" type="number" min="1" max="12000" step="1"></label>
           <button class="lockbtn" id="lock" aria-pressed="true" title="비율 고정" aria-label="비율 고정"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.66 0l3-3a4 4 0 0 0-5.66-5.66l-1 1"/><path d="M14 10a4 4 0 0 0-5.66 0l-3 3a4 4 0 0 0 5.66 5.66l1-1"/></svg></button>
@@ -242,35 +291,71 @@ fieldset:disabled{opacity:.45}
           <button class="chip" data-long="1080">긴 변 1080</button>
           <button class="chip" data-long="1920">긴 변 1920</button>
         </div>
+        <label class="check" id="sizeAllRow" hidden><input type="checkbox" id="sizeAll"> 위 버튼을 모든 사진에 적용</label>
+      </section>
+
+      <!-- auto mask -->
+      <section class="sec">
+        <div class="sec-h"><h2>자동 마스크 <span class="scope each" data-scope>사진별 적용</span></h2>
+          <label class="swl"><span class="sum" id="sumMask"></span><input type="checkbox" class="switch" id="maskOn" aria-label="이 사진에 마스크 적용"></label>
+        </div>
+        <div class="seg" role="radiogroup" aria-label="마스크 방식">
+          <label><input type="radio" name="mmode" value="ai" data-bind="mask.mode"><span>AI 피사체 인식</span></label>
+          <label><input type="radio" name="mmode" value="color" data-bind="mask.mode"><span>단색 배경 지우기</span></label>
+        </div>
+        <div id="aiOpts" style="display:contents">
+          <div class="seg" role="radiogroup" aria-label="AI 모델">
+            <label><input type="radio" name="mmodel" value="general" data-bind="mask.model"><span>사물·일반</span></label>
+            <label><input type="radio" name="mmodel" value="portrait" data-bind="mask.model"><span>인물 정밀</span></label>
+          </div>
+          <p class="hint" id="modelHint"></p>
+        </div>
+        <div id="colorOpts" style="display:contents">
+          <div class="field"><label for="mtol">허용 범위</label><input type="range" id="mtol" min="1" max="100" step="1" data-bind="mask.tol"><input class="num" type="number" min="1" max="100" step="1" data-bind="mask.tol" aria-label="허용 범위"></div>
+          <p class="hint">가장자리에서 이어지는 비슷한 색을 지웁니다. 흰 배경 제품 사진, 로고, 스캔한 서명에 잘 맞습니다.</p>
+        </div>
+        <div class="row">
+          <button class="btn sm primary" id="maskRun">이 사진 배경 지우기</button>
+          <button class="btn sm" id="maskRunAll" hidden>모든 사진</button>
+        </div>
+        <fieldset id="maskRefine">
+          <div class="field" id="edgeField"><label for="medge">경계</label><input type="range" id="medge" min="0" max="100" step="1" data-bind="mask.edge"><input class="num" type="number" min="0" max="100" step="1" data-bind="mask.edge" aria-label="경계 선명도"></div>
+          <div class="field"><label for="mfe">부드럽게</label><input type="range" id="mfe" min="0" max="40" step="1" data-bind="mask.feather"><input class="num" type="number" min="0" max="200" step="1" data-bind="mask.feather" aria-label="가장자리 흐림 (px)"></div>
+          <label class="check"><input type="checkbox" data-bind="mask.invert"> 반전 (피사체 대신 배경만 남기기)</label>
+        </fieldset>
       </section>
 
       <!-- border -->
       <section class="sec">
-        <div class="sec-h"><h2>테두리</h2><span class="sum" id="sumBorder"></span></div>
+        <div class="sec-h"><h2>테두리 <span class="scope" data-scope>모든 사진</span></h2><span class="sum" id="sumBorder"></span></div>
         <div class="field"><label for="bw">두께</label><input type="range" id="bw" min="0" max="200" step="1" data-bind="border.width"><input class="num" type="number" min="0" step="1" data-bind="border.width" aria-label="테두리 두께 (px)"></div>
         <div class="field"><label for="br">둥글기</label><input type="range" id="br" min="0" max="500" step="1" data-bind="border.radius"><input class="num" type="number" min="0" step="1" data-bind="border.radius" aria-label="모서리 둥글기 (px)"></div>
         <div class="field"><label for="bc">색상</label>
           <div class="colorrow">
             <input type="color" id="bc" data-bind="border.color" aria-label="테두리 색상">
-            <button class="sw" style="background:#ffffff" data-sw="#ffffff" aria-label="흰색"></button>
-            <button class="sw" style="background:#111111" data-sw="#111111" aria-label="검정"></button>
-            <button class="sw" style="background:#8a8f98" data-sw="#8a8f98" aria-label="회색"></button>
-            <button class="sw" style="background:#efe6d8" data-sw="#efe6d8" aria-label="미색"></button>
+            <button class="sw" style="background:#ffffff" data-sw="border" data-c="#ffffff" aria-label="흰색"></button>
+            <button class="sw" style="background:#111111" data-sw="border" data-c="#111111" aria-label="검정"></button>
+            <button class="sw" style="background:#8a8f98" data-sw="border" data-c="#8a8f98" aria-label="회색"></button>
+            <button class="sw" style="background:#efe6d8" data-sw="border" data-c="#efe6d8" aria-label="미색"></button>
           </div><span></span>
         </div>
-        <p class="hint">둥글기는 테두리 없이도 사진 모서리에 적용됩니다.</p>
+        <div class="seg" role="radiogroup" aria-label="테두리 모양">
+          <label><input type="radio" name="bshape" value="rect" data-bind="border.shape"><span>사각형</span></label>
+          <label><input type="radio" name="bshape" value="outline" data-bind="border.shape"><span>윤곽선 (마스크 모양)</span></label>
+        </div>
+        <p class="hint">윤곽선은 마스크를 적용한 사진에서 피사체를 따라 스티커처럼 테두리를 그립니다.</p>
       </section>
 
       <!-- opacity -->
       <section class="sec">
-        <div class="sec-h"><h2>투명도</h2><span class="sum" id="sumOpacity"></span></div>
+        <div class="sec-h"><h2>투명도 <span class="scope" data-scope>모든 사진</span></h2><span class="sum" id="sumOpacity"></span></div>
         <div class="field"><label for="op">불투명도</label><input type="range" id="op" min="0" max="100" step="1" data-bind="opacity"><input class="num" type="number" min="0" max="100" step="1" data-bind="opacity" aria-label="불투명도 (%)"></div>
       </section>
 
       <!-- shadow -->
       <section class="sec">
-        <div class="sec-h"><h2>그림자</h2>
-          <label style="display:flex;align-items:center;gap:8px"><span class="sum" id="sumShadow"></span><input type="checkbox" class="switch" id="shOn" data-bind="shadow.on" aria-label="그림자 켜기"></label>
+        <div class="sec-h"><h2>그림자 <span class="scope" data-scope>모든 사진</span></h2>
+          <label class="swl"><span class="sum" id="sumShadow"></span><input type="checkbox" class="switch" id="shOn" data-bind="shadow.on" aria-label="그림자 켜기"></label>
         </div>
         <fieldset id="shFields" disabled>
           <div class="field"><label for="shx">가로</label><input type="range" id="shx" min="-200" max="200" step="1" data-bind="shadow.x"><input class="num" type="number" step="1" data-bind="shadow.x" aria-label="그림자 가로 위치 (px)"></div>
@@ -279,21 +364,41 @@ fieldset:disabled{opacity:.45}
           <div class="field"><label for="sha">진하기</label><input type="range" id="sha" min="0" max="100" step="1" data-bind="shadow.alpha"><input class="num" type="number" min="0" max="100" step="1" data-bind="shadow.alpha" aria-label="그림자 진하기 (%)"></div>
           <div class="field"><label for="shc">색상</label><div class="colorrow"><input type="color" id="shc" data-bind="shadow.color" aria-label="그림자 색상"></div><span></span></div>
         </fieldset>
-        <p class="hint">그림자가 잘리지 않도록 결과 이미지에 투명한 여백이 추가됩니다.</p>
+      </section>
+
+      <!-- background -->
+      <section class="sec">
+        <div class="sec-h"><h2>배경 <span class="scope" data-scope>모든 사진</span></h2>
+          <label class="swl"><span class="sum" id="sumBg"></span><input type="checkbox" class="switch" id="bgOn" data-bind="bg.on" aria-label="배경색 채우기"></label>
+        </div>
+        <fieldset id="bgFields" disabled>
+          <div class="field"><label for="bgc">색상</label>
+            <div class="colorrow">
+              <input type="color" id="bgc" data-bind="bg.color" aria-label="배경색">
+              <button class="sw" style="background:#ffffff" data-sw="bg" data-c="#ffffff" aria-label="흰색"></button>
+              <button class="sw" style="background:#f1efe9" data-sw="bg" data-c="#f1efe9" aria-label="미색"></button>
+              <button class="sw" style="background:#dfe6ee" data-sw="bg" data-c="#dfe6ee" aria-label="연한 하늘색"></button>
+              <button class="sw" style="background:#1b1d22" data-sw="bg" data-c="#1b1d22" aria-label="먹색"></button>
+            </div><span></span>
+          </div>
+        </fieldset>
+        <div class="field"><label for="pad">여백</label><input type="range" id="pad" min="0" max="300" step="1" data-bind="pad"><input class="num" type="number" min="0" step="1" data-bind="pad" aria-label="여백 (px)"></div>
+        <p class="hint">배경을 끄면 투명하게 저장됩니다(PNG·WebP). 여백은 사진 둘레에 공간을 더합니다.</p>
       </section>
 
       <!-- export -->
       <section class="sec">
-        <div class="sec-h"><h2>내보내기</h2><span class="sum" id="sumExport"></span></div>
-        <div class="seg" role="radiogroup" aria-label="파일 형식">
+        <div class="sec-h"><h2>내보내기 <span class="scope" data-scope>모든 사진</span></h2><span class="sum" id="sumExport"></span></div>
+        <div class="seg mono" role="radiogroup" aria-label="파일 형식">
           <label><input type="radio" name="fmt" value="png" checked><span>PNG</span></label>
           <label><input type="radio" name="fmt" value="jpeg"><span>JPG</span></label>
           <label><input type="radio" name="fmt" value="webp"><span>WebP</span></label>
         </div>
         <div class="field" id="qField" hidden><label for="q">품질</label><input type="range" id="q" min="40" max="100" step="1" value="92"><input class="num" id="qn" type="number" min="40" max="100" step="1" value="92" aria-label="품질"></div>
-        <div class="field" id="bgField" hidden><label for="bg">배경</label><div class="colorrow"><input type="color" id="bg" value="#ffffff" aria-label="JPG 배경색"></div><span></span></div>
-        <p class="hint" id="fmtHint">PNG는 투명한 부분(투명도, 그림자, 둥근 모서리)을 그대로 보존합니다.</p>
-        <button class="btn primary wide" id="save">저장</button>
+        <div class="field" id="jbgField" hidden><label for="jbg">빈 곳</label><div class="colorrow"><input type="color" id="jbg" value="#ffffff" aria-label="JPG 빈 곳 색"></div><span></span></div>
+        <p class="hint" id="fmtHint">PNG는 투명한 부분(투명도, 그림자, 둥근 모서리, 마스크)을 그대로 보존합니다.</p>
+        <button class="btn primary wide" id="save">이 사진 저장</button>
+        <button class="btn wide" id="saveAll" hidden>모두 저장 (ZIP)</button>
       </section>
     </aside>
   </main>
@@ -305,26 +410,29 @@ fieldset:disabled{opacity:.45}
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const MAX_OUT = 12000;
+const MAX_OUT = 12000, PROXY_EDGE = 2048, COLOR_MASK_EDGE = 1200;
+const newCanvas = (w, h) => { const c = document.createElement("canvas"); if (w) { c.width = w; c.height = h; } return c; };
 
-/* ---------- state ---------- */
-let img = null, srcW = 0, srcH = 0, proxy = null, proxyScale = 1;
-let fileBase = "사진", isSample = false, lastUrl = null;
-let S = null;
-const E = { fmt: "png", quality: 92, bg: "#ffffff" };
+/* ============ state ============
+   items: every opened photo. Each keeps its own `st` (crop, size, lock, mask on/off).
+   G: settings shared by all photos (border, opacity, shadow, background, mask options). */
+let items = [], cur = null, uid = 0;
+const G = {
+  border: { width: 0, color: "#ffffff", radius: 0, shape: "rect" },
+  opacity: 100,
+  shadow: { on: false, x: 0, y: 24, blur: 48, color: "#000000", alpha: 35 },
+  bg: { on: false, color: "#ffffff" },
+  pad: 0,
+  mask: { mode: "ai", model: "general", tol: 30, edge: 50, feather: 0, invert: false },
+  sizeRule: null
+};
+const G0 = JSON.parse(JSON.stringify(G));
+const E = { fmt: "png", quality: 92, jbg: "#ffffff" };
+let P = null; // = cur.st
 let hist = [], hi = -1;
 
-function defaults() {
-  const base = Math.max(srcW, srcH) / 100;
-  return {
-    crop: { x: 0, y: 0, w: srcW, h: srcH },
-    outW: srcW, outH: srcH, lock: true,
-    border: { width: 0, color: "#ffffff", radius: 0 },
-    opacity: 100,
-    shadow: { on: false, x: 0, y: Math.round(base * 1.5), blur: Math.round(base * 3), color: "#000000", alpha: 35 }
-  };
-}
-const snap = () => JSON.stringify(S);
+const freshSt = it => ({ crop: { x: 0, y: 0, w: it.srcW, h: it.srcH }, outW: it.srcW, outH: it.srcH, lock: true, mask: false });
+const snap = () => JSON.stringify({ G, per: items.map(i => [i.id, i.st]) });
 function commit() {
   const s = snap();
   if (hist[hi] === s) return;
@@ -332,87 +440,170 @@ function commit() {
   if (hist.length > 100) hist.shift();
   hi = hist.length - 1; updateHistButtons();
 }
-function restore(i) { hi = i; S = JSON.parse(hist[hi]); syncUI(); scheduleRender(); updateHistButtons(); }
+function restore(i) {
+  hi = i; const o = JSON.parse(hist[hi]);
+  for (const k in o.G) G[k] = o.G[k];
+  for (const [id, st] of o.per) { const it = items.find(x => x.id === id); if (it) it.st = st; }
+  P = cur.st; syncUI(); renderStrip(); scheduleRender(); updateHistButtons();
+}
 function undo() { if (crop.active) { exitCrop(); return; } if (hi > 0) restore(hi - 1); }
 function redo() { if (!crop.active && hi < hist.length - 1) restore(hi + 1); }
 function updateHistButtons() { $("#undo").disabled = hi <= 0; $("#redo").disabled = hi >= hist.length - 1; }
-
 const getP = (o, p) => p.split(".").reduce((a, k) => a[k], o);
 function setP(o, p, v) { const ks = p.split("."); const last = ks.pop(); ks.reduce((a, k) => a[k], o)[last] = v; }
 
-/* ---------- image helpers ---------- */
+/* ============ drawing helpers ============ */
 function stepDown(src, sx, sy, sw, sh, tw, th) {
-  let cur = src;
+  let cur_ = src;
   while (sw / 2 >= tw && sh / 2 >= th) {
     const nw = Math.max(1, Math.round(sw / 2)), nh = Math.max(1, Math.round(sh / 2));
-    const t = document.createElement("canvas"); t.width = nw; t.height = nh;
-    const c = t.getContext("2d"); c.imageSmoothingQuality = "high";
-    c.drawImage(cur, sx, sy, sw, sh, 0, 0, nw, nh);
-    cur = t; sx = 0; sy = 0; sw = nw; sh = nh;
+    const t = newCanvas(nw, nh), c = t.getContext("2d"); c.imageSmoothingQuality = "high";
+    c.drawImage(cur_, sx, sy, sw, sh, 0, 0, nw, nh);
+    cur_ = t; sx = 0; sy = 0; sw = nw; sh = nh;
   }
-  return { src: cur, sx, sy, sw, sh };
+  return { src: cur_, sx, sy, sw, sh };
 }
-function rr(c, x, y, w, h, r) {
+function resample(src, sw, sh, tw, th) {
+  const s = stepDown(src, 0, 0, sw, sh, tw, th);
+  const c = newCanvas(tw, th), g = c.getContext("2d"); g.imageSmoothingQuality = "high";
+  g.drawImage(s.src, s.sx, s.sy, s.sw, s.sh, 0, 0, tw, th);
+  return c;
+}
+function rrSub(c, x, y, w, h, r) {
   r = Math.max(0, Math.min(r, w / 2, h / 2));
-  c.beginPath(); c.moveTo(x + r, y);
+  c.moveTo(x + r, y);
   c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
   c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
 }
-function rgba(hex, a) {
-  const n = parseInt(hex.slice(1), 16);
-  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
-}
+function rr(c, x, y, w, h, r) { c.beginPath(); rrSub(c, x, y, w, h, r); }
+function rgba(hex, a) { const n = parseInt(hex.slice(1), 16); return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`; }
 
-function geom(scale) {
-  const iw = S.outW * scale, ih = S.outH * scale, bw = S.border.width * scale;
+function geom(scale, st) {
+  const iw = st.outW * scale, ih = st.outH * scale, bw = G.border.width * scale, pad = G.pad * scale;
   const lwf = iw + 2 * bw, lhf = ih + 2 * bw;
-  const R = Math.min(S.border.radius * scale, lwf / 2, lhf / 2);
-  let ml = 0, mr = 0, mt = 0, mb = 0;
-  if (S.shadow.on) {
-    const e = S.shadow.blur * scale * 1.5, ox = S.shadow.x * scale, oy = S.shadow.y * scale;
-    ml = Math.max(0, e - ox); mr = Math.max(0, e + ox); mt = Math.max(0, e - oy); mb = Math.max(0, e + oy);
+  const R = Math.min(G.border.radius * scale, lwf / 2, lhf / 2);
+  let ml = pad, mr = pad, mt = pad, mb = pad;
+  if (G.shadow.on) {
+    const e = G.shadow.blur * scale * 1.5, ox = G.shadow.x * scale, oy = G.shadow.y * scale;
+    ml = Math.max(ml, e - ox); mr = Math.max(mr, e + ox); mt = Math.max(mt, e - oy); mb = Math.max(mb, e + oy);
   }
   ml = Math.ceil(ml); mt = Math.ceil(mt); mr = Math.ceil(mr); mb = Math.ceil(mb);
-  return { iw, ih, bw, lwf, lhf, R, ml, mt,
-    lw: Math.max(1, Math.ceil(lwf)), lh: Math.max(1, Math.ceil(lhf)),
-    W: Math.max(1, Math.ceil(lwf) + ml + mr), H: Math.max(1, Math.ceil(lhf) + mt + mb) };
+  const lw = Math.max(1, Math.ceil(lwf)), lh = Math.max(1, Math.ceil(lhf));
+  return { iw, ih, bw, lwf, lhf, R, ml, mt, lw, lh, W: lw + ml + mr, H: lh + mt + mb };
 }
 
-const layerC = document.createElement("canvas");
-function compose(scale, target, hq) {
-  const D = geom(scale);
-  const L = hq ? document.createElement("canvas") : layerC;
-  L.width = D.lw; L.height = D.lh;
-  const l = L.getContext("2d");
-  l.clearRect(0, 0, L.width, L.height);
-  l.imageSmoothingEnabled = true; l.imageSmoothingQuality = "high";
-  if (D.bw > 0) { l.fillStyle = S.border.color; rr(l, 0, 0, D.lwf, D.lhf, D.R); l.fill(); }
-  l.save();
-  rr(l, D.bw, D.bw, D.iw, D.ih, Math.max(0, D.R - D.bw)); l.clip();
-  const c = S.crop;
-  const s = hq
-    ? stepDown(img, c.x, c.y, c.w, c.h, Math.round(D.iw), Math.round(D.ih))
-    : { src: proxy, sx: c.x * proxyScale, sy: c.y * proxyScale, sw: c.w * proxyScale, sh: c.h * proxyScale };
-  l.drawImage(s.src, s.sx, s.sy, s.sw, s.sh, D.bw, D.bw, D.iw, D.ih);
-  l.restore();
-
-  target.width = D.W; target.height = D.H;
-  const o = target.getContext("2d");
-  o.clearRect(0, 0, D.W, D.H);
-  o.save();
-  o.globalAlpha = S.opacity / 100;
-  if (S.shadow.on) {
-    o.shadowColor = rgba(S.shadow.color, S.shadow.alpha / 100);
-    o.shadowBlur = S.shadow.blur * scale;
-    o.shadowOffsetX = S.shadow.x * scale;
-    o.shadowOffsetY = S.shadow.y * scale;
+const tmpT = newCanvas(), tmpL = newCanvas(), tmpS = newCanvas();
+function compose(scale, target, hq, it) {
+  const st = it.st, D = geom(scale, st), c = st.crop;
+  const iwR = Math.max(1, Math.round(D.iw)), ihR = Math.max(1, Math.round(D.ih));
+  // 1) photo, cropped and resized, with mask
+  const T = hq ? newCanvas() : tmpT; T.width = iwR; T.height = ihR;
+  const t = T.getContext("2d"); t.imageSmoothingEnabled = true; t.imageSmoothingQuality = "high";
+  const s = hq ? stepDown(it.img, c.x, c.y, c.w, c.h, iwR, ihR)
+               : { src: it.proxy, sx: c.x * it.proxyScale, sy: c.y * it.proxyScale, sw: c.w * it.proxyScale, sh: c.h * it.proxyScale };
+  t.drawImage(s.src, s.sx, s.sy, s.sw, s.sh, 0, 0, iwR, ihR);
+  const M = st.mask ? getMask(it) : null;
+  if (M) {
+    const kx = M.width / it.srcW, ky = M.height / it.srcH;
+    t.globalCompositeOperation = "destination-in";
+    if (G.mask.feather > 0) t.filter = `blur(${G.mask.feather * scale}px)`;
+    t.drawImage(M, c.x * kx, c.y * ky, c.w * kx, c.h * ky, 0, 0, iwR, ihR);
+    t.filter = "none"; t.globalCompositeOperation = "source-over";
   }
-  o.drawImage(L, D.ml, D.mt);
-  o.restore();
+  // 2) layer: border + photo
+  const L = hq ? newCanvas() : tmpL; L.width = D.lw; L.height = D.lh;
+  const l = L.getContext("2d"); l.clearRect(0, 0, D.lw, D.lh); l.imageSmoothingQuality = "high";
+  if (M && G.border.shape === "outline" && D.bw > 0) {
+    const Sx = hq ? newCanvas() : tmpS; Sx.width = D.lw; Sx.height = D.lh;
+    const sx = Sx.getContext("2d"); sx.clearRect(0, 0, D.lw, D.lh);
+    const n = Math.min(72, Math.max(16, Math.ceil(D.bw * 2)));
+    for (const rad of [D.bw, D.bw * 0.66, D.bw * 0.33]) for (let k = 0; k < n; k++) {
+      const a = 2 * Math.PI * k / n; sx.drawImage(T, D.bw + Math.cos(a) * rad, D.bw + Math.sin(a) * rad, D.iw, D.ih);
+    }
+    sx.globalCompositeOperation = "source-in"; sx.fillStyle = G.border.color; sx.fillRect(0, 0, D.lw, D.lh);
+    sx.globalCompositeOperation = "source-over";
+    l.drawImage(Sx, 0, 0);
+    l.drawImage(T, D.bw, D.bw, D.iw, D.ih);
+  } else {
+    const inR = Math.max(0, D.R - D.bw);
+    if (D.bw > 0) {
+      l.fillStyle = G.border.color; l.beginPath();
+      rrSub(l, 0, 0, D.lwf, D.lhf, D.R); rrSub(l, D.bw, D.bw, D.iw, D.ih, inR); l.fill("evenodd");
+    }
+    l.save(); rr(l, D.bw, D.bw, D.iw, D.ih, inR); l.clip();
+    l.drawImage(T, D.bw, D.bw, D.iw, D.ih); l.restore();
+  }
+  // 3) canvas: background, opacity, shadow
+  target.width = D.W; target.height = D.H;
+  const o = target.getContext("2d"); o.clearRect(0, 0, D.W, D.H);
+  if (G.bg.on) { o.fillStyle = G.bg.color; o.fillRect(0, 0, D.W, D.H); }
+  o.save(); o.globalAlpha = G.opacity / 100;
+  if (G.shadow.on) {
+    o.shadowColor = rgba(G.shadow.color, G.shadow.alpha / 100);
+    o.shadowBlur = G.shadow.blur * scale; o.shadowOffsetX = G.shadow.x * scale; o.shadowOffsetY = G.shadow.y * scale;
+  }
+  o.drawImage(L, D.ml, D.mt); o.restore();
   return D;
 }
 
-/* ---------- preview ---------- */
+/* ============ items ============ */
+function ensureProxy(it) {
+  if (it.proxy) return;
+  const k = Math.min(1, PROXY_EDGE / Math.max(it.srcW, it.srcH));
+  const pw = Math.max(1, Math.round(it.srcW * k)), ph = Math.max(1, Math.round(it.srcH * k));
+  it.proxy = resample(it.img, it.srcW, it.srcH, pw, ph); it.proxyScale = pw / it.srcW;
+}
+function makeItem(img, name, sample, url) {
+  const w = img.naturalWidth || img.width, h = img.naturalHeight || img.height;
+  const it = { id: ++uid, name, img, srcW: w, srcH: h, sample, url, proxy: null, proxyScale: 1, maskRaw: null, maskC: null, maskKey: "" };
+  it.st = freshSt(it);
+  const k = 120 / Math.max(w, h);
+  it.thumb = resample(img, w, h, Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))).toDataURL("image/jpeg", .8);
+  if (G.sizeRule) applySizeRule(it, G.sizeRule);
+  return it;
+}
+function select(it) {
+  if (crop.active) exitCrop();
+  cur = it; P = it.st;
+  for (const x of items) if (x !== it) x.proxy = null;
+  ensureProxy(it);
+  crop.ratio = null; crop.ratioKey = "free";
+  $$("#ratios .chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ratio === "free")));
+  syncUI(); renderStrip(); scheduleRender();
+}
+function removeItem(it) {
+  const i = items.indexOf(it); if (i < 0) return;
+  items.splice(i, 1);
+  if (it.url) URL.revokeObjectURL(it.url);
+  if (!items.length) { addSample(); return; }
+  if (cur === it) select(items[Math.min(i, items.length - 1)]); else renderStrip();
+  commit();
+}
+function renderStrip() {
+  const s = $("#strip"); s.textContent = "";
+  if (items.length > 1) { const n = document.createElement("span"); n.className = "count"; n.textContent = `${items.indexOf(cur) + 1}/${items.length}`; s.appendChild(n); }
+  for (const it of items) {
+    const b = document.createElement("button");
+    b.className = "thumb"; b.setAttribute("aria-current", String(it === cur)); b.title = it.name;
+    b.setAttribute("aria-label", `${it.name} 편집`);
+    const im = document.createElement("img"); im.src = it.thumb; im.alt = ""; b.appendChild(im);
+    if (it.st.mask && it.maskRaw) { const bd = document.createElement("span"); bd.className = "badge"; bd.textContent = "마스크"; b.appendChild(bd); }
+    const x = document.createElement("span"); x.className = "x"; x.textContent = "×"; x.title = "목록에서 빼기"; x.setAttribute("aria-hidden", "true");
+    b.appendChild(x);
+    b.addEventListener("click", e => { if (e.target === x) removeItem(it); else if (it !== cur) select(it); });
+    b.addEventListener("keydown", e => { if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); removeItem(it); } });
+    s.appendChild(b);
+  }
+  const add = document.createElement("label"); add.className = "addtile"; add.htmlFor = "file"; add.title = "사진 추가"; add.textContent = "+";
+  s.appendChild(add);
+  const many = items.length > 1;
+  $$("[data-scope]").forEach(e => e.hidden = !many);
+  $("#sizeAllRow").hidden = !many; $("#maskRunAll").hidden = !many; $("#saveAll").hidden = !many;
+  $("#saveAll").textContent = `모두 저장 · ${items.length}장 (ZIP)`;
+  $("#save").textContent = many ? "이 사진 저장" : "저장";
+}
+
+/* ============ preview ============ */
 const view = $("#view"), viewport = $("#viewport");
 let raf = 0, fitPct = 100;
 function scheduleRender() { if (!raf) raf = requestAnimationFrame(() => { raf = 0; render(); }); }
@@ -422,69 +613,70 @@ function avail() {
            h: Math.max(50, viewport.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom)) };
 }
 function render() {
-  if (!img) return;
+  if (!cur) return;
   if (crop.active) { layoutCrop(); return; }
-  const full = geom(1), a = avail();
+  const full = geom(1, P), a = avail();
   const fs = Math.min(1, a.w / full.W, a.h / full.H);
-  const dpr = window.devicePixelRatio || 1;
-  compose(Math.min(fs * dpr, 2), view, false);
-  view.style.width = (full.W * fs) + "px";
-  view.style.height = (full.H * fs) + "px";
+  compose(Math.min(fs * (window.devicePixelRatio || 1), 2), view, false, cur);
+  view.style.width = (full.W * fs) + "px"; view.style.height = (full.H * fs) + "px";
   fitPct = Math.round(fs * 100);
   updateInfo(full);
 }
 function updateInfo(full) {
-  full = full || geom(1);
+  full = full || geom(1, P);
   const info = $("#info"); info.textContent = "";
   const add = (t, cls) => { const s = document.createElement("span"); s.textContent = t; if (cls) s.className = cls; info.appendChild(s); };
-  if (isSample) add("예시 이미지 · 사진을 열거나 끌어다 놓으세요", "tag");
-  add(`원본 ${srcW}×${srcH}`);
+  if (cur.sample) add("예시 이미지 · 사진을 추가하거나 끌어다 놓으세요", "tag");
+  add(`원본 ${cur.srcW}×${cur.srcH}`);
   add(`결과 ${full.W}×${full.H}px`);
-  if (crop.active) add("자르기 중"); else add(`화면 ${fitPct}%`);
+  add(crop.active ? "자르기 중" : `화면 ${fitPct}%`);
 }
+function setPreviewBg(v) {
+  $("#stage").dataset.pv = v;
+  $$(".pvsel button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.pv === v)));
+  try { localStorage.setItem("lightbox-pv", v); } catch (e) {}
+}
+$$(".pvsel button").forEach(b => b.addEventListener("click", () => setPreviewBg(b.dataset.pv)));
+let pv0 = "checker"; try { pv0 = localStorage.getItem("lightbox-pv") || "checker"; } catch (e) {}
+setPreviewBg(pv0);
 
-/* ---------- crop mode ---------- */
+/* ============ crop ============ */
 const crop = { active: false, draft: null, ratio: null, ratioKey: "free", ds: 1 };
 const cropwrap = $("#cropwrap"), cropbox = $("#cropbox"), cropCanvas = $("#cropCanvas");
 const MIN = 8;
-
+let W_ = 0, H_ = 0; // current source size while cropping
 function enterCrop() {
   if (crop.active) return;
-  crop.active = true; crop.draft = { ...S.crop };
+  crop.active = true; crop.draft = { ...P.crop }; W_ = cur.srcW; H_ = cur.srcH;
   view.hidden = true; cropwrap.hidden = false;
   $("#cropIdle").hidden = true; $("#cropBusy").hidden = false;
   $("#cropHint").textContent = "드래그해서 영역을 고르세요. 모서리로 크기, 안쪽으로 위치를 바꿉니다. Enter 적용 · Esc 취소";
-  layoutCrop();
+  cropCanvas._src = null; layoutCrop();
 }
 function exitCrop() {
-  crop.active = false;
-  view.hidden = false; cropwrap.hidden = true;
+  crop.active = false; view.hidden = false; cropwrap.hidden = true;
   $("#cropIdle").hidden = false; $("#cropBusy").hidden = true;
   $("#cropHint").textContent = "비율을 고르거나 ‘영역 선택’을 누른 뒤 사진 위를 드래그하세요.";
-  syncCropInputs(S.crop); updateSummaries(); scheduleRender();
+  syncCropInputs(P.crop); updateSummaries(); scheduleRender();
 }
 function applyCrop() {
-  const d = crop.draft, o = S.crop;
-  let x = Math.round(d.x), y = Math.round(d.y), w = Math.round(d.w), h = Math.round(d.h);
-  w = clamp(w, 1, srcW); h = clamp(h, 1, srcH); x = clamp(x, 0, srcW - w); y = clamp(y, 0, srcH - h);
-  const kx = S.outW / o.w, ky = S.outH / o.h;
-  S.crop = { x, y, w, h };
-  S.outW = clamp(Math.round(w * kx), 1, MAX_OUT);
-  S.outH = clamp(Math.round(h * ky), 1, MAX_OUT);
+  const d = crop.draft, o = P.crop;
+  let w = clamp(Math.round(d.w), 1, W_), h = clamp(Math.round(d.h), 1, H_);
+  const x = clamp(Math.round(d.x), 0, W_ - w), y = clamp(Math.round(d.y), 0, H_ - h);
+  const kx = P.outW / o.w, ky = P.outH / o.h;
+  P.crop = { x, y, w, h };
+  P.outW = clamp(Math.round(w * kx), 1, MAX_OUT); P.outH = clamp(Math.round(h * ky), 1, MAX_OUT);
   exitCrop(); syncUI(); commit();
 }
 function layoutCrop() {
-  const a = avail();
-  const ds = Math.min(a.w / srcW, a.h / srcH);
+  const a = avail(), ds = Math.min(a.w / W_, a.h / H_);
   crop.ds = ds;
-  const w = Math.max(1, Math.round(srcW * ds)), h = Math.max(1, Math.round(srcH * ds));
+  const w = Math.max(1, Math.round(W_ * ds)), h = Math.max(1, Math.round(H_ * ds));
   cropwrap.style.width = w + "px"; cropwrap.style.height = h + "px";
-  const dpr = window.devicePixelRatio || 1;
-  const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
-  if (cropCanvas.width !== pw || cropCanvas.height !== ph || cropCanvas._src !== proxy) {
-    cropCanvas.width = pw; cropCanvas.height = ph; cropCanvas._src = proxy;
-    const c = cropCanvas.getContext("2d"); c.imageSmoothingQuality = "high";
-    c.drawImage(proxy, 0, 0, pw, ph);
+  const dpr = window.devicePixelRatio || 1, pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+  if (cropCanvas.width !== pw || cropCanvas.height !== ph || cropCanvas._src !== cur.proxy) {
+    cropCanvas.width = pw; cropCanvas.height = ph; cropCanvas._src = cur.proxy;
+    const c = cropCanvas.getContext("2d"); c.imageSmoothingQuality = "high"; c.drawImage(cur.proxy, 0, 0, pw, ph);
   }
   drawBox();
 }
@@ -492,257 +684,428 @@ function drawBox() {
   const d = crop.draft, ds = crop.ds;
   cropbox.style.left = d.x * ds + "px"; cropbox.style.top = d.y * ds + "px";
   cropbox.style.width = d.w * ds + "px"; cropbox.style.height = d.h * ds + "px";
-  const sz = $("#cropSize");
-  sz.textContent = `${Math.round(d.w)} × ${Math.round(d.h)}`;
+  const sz = $("#cropSize"); sz.textContent = `${Math.round(d.w)} × ${Math.round(d.h)}`;
   sz.classList.toggle("inside", d.y * ds < 30);
   syncCropInputs(d); updateSummaries(); updateInfo();
 }
 function resizeRect(r0, hd, dx, dy, ratio) {
   let l = r0.x, t = r0.y, r = r0.x + r0.w, b = r0.y + r0.h;
-  const W_ = hd.includes("w"), E_ = hd.includes("e"), N_ = hd.includes("n"), S_ = hd.includes("s");
-  if (W_) l = clamp(l + dx, 0, r - MIN);
-  if (E_) r = clamp(r + dx, l + MIN, srcW);
-  if (N_) t = clamp(t + dy, 0, b - MIN);
-  if (S_) b = clamp(b + dy, t + MIN, srcH);
+  const hw = hd.includes("w"), he = hd.includes("e"), hn = hd.includes("n"), hs = hd.includes("s");
+  if (hw) l = clamp(l + dx, 0, r - MIN);
+  if (he) r = clamp(r + dx, l + MIN, W_);
+  if (hn) t = clamp(t + dy, 0, b - MIN);
+  if (hs) b = clamp(b + dy, t + MIN, H_);
   if (!ratio) return { x: l, y: t, w: r - l, h: b - t };
   let w = r - l, h = b - t;
-  const cx = W_ ? r : E_ ? l : r0.x + r0.w / 2;
-  const cy = N_ ? b : S_ ? t : r0.y + r0.h / 2;
-  const maxW = W_ ? cx : E_ ? srcW - cx : 2 * Math.min(cx, srcW - cx);
-  const maxH = N_ ? cy : S_ ? srcH - cy : 2 * Math.min(cy, srcH - cy);
-  const corner = (W_ || E_) && (N_ || S_);
-  if (corner) { if (w / h > ratio) h = w / ratio; else w = h * ratio; }
-  else if (W_ || E_) h = w / ratio; else w = h * ratio;
+  const cx = hw ? r : he ? l : r0.x + r0.w / 2, cy = hn ? b : hs ? t : r0.y + r0.h / 2;
+  const maxW = hw ? cx : he ? W_ - cx : 2 * Math.min(cx, W_ - cx);
+  const maxH = hn ? cy : hs ? H_ - cy : 2 * Math.min(cy, H_ - cy);
+  if ((hw || he) && (hn || hs)) { if (w / h > ratio) h = w / ratio; else w = h * ratio; }
+  else if (hw || he) h = w / ratio; else w = h * ratio;
   const k = Math.min(1, maxW / w, maxH / h); w *= k; h *= k;
-  return { x: W_ ? cx - w : E_ ? cx : cx - w / 2, y: N_ ? cy - h : S_ ? cy : cy - h / 2, w, h };
+  return { x: hw ? cx - w : he ? cx : cx - w / 2, y: hn ? cy - h : hs ? cy : cy - h / 2, w, h };
 }
 function fitRatio(ratio, around) {
-  let w = srcW, h = srcW / ratio;
-  if (h > srcH) { h = srcH; w = srcH * ratio; }
+  let w = W_, h = W_ / ratio; if (h > H_) { h = H_; w = H_ * ratio; }
   const cx = around.x + around.w / 2, cy = around.y + around.h / 2;
-  return { x: clamp(cx - w / 2, 0, srcW - w), y: clamp(cy - h / 2, 0, srcH - h), w, h };
+  return { x: clamp(cx - w / 2, 0, W_ - w), y: clamp(cy - h / 2, 0, H_ - h), w, h };
 }
 function setRatio(key) {
-  crop.ratioKey = key;
-  crop.ratio = key === "free" ? null : key === "orig" ? srcW / srcH : parseFloat(key);
-  $$("#ratios .chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ratio === key)));
   enterCrop();
-  if (crop.ratio) { crop.draft = fitRatio(crop.ratio, crop.draft); }
+  crop.ratioKey = key;
+  crop.ratio = key === "free" ? null : key === "orig" ? W_ / H_ : parseFloat(key);
+  $$("#ratios .chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ratio === key)));
+  if (crop.ratio) crop.draft = fitRatio(crop.ratio, crop.draft);
   drawBox();
 }
-
 let drag = null;
+const toSrc = e => { const r = cropwrap.getBoundingClientRect(); return { x: (e.clientX - r.left) / crop.ds, y: (e.clientY - r.top) / crop.ds }; };
 cropwrap.addEventListener("pointerdown", e => {
   if (e.button !== 0) return;
-  const rect = cropwrap.getBoundingClientRect();
-  const p = { x: (e.clientX - rect.left) / crop.ds, y: (e.clientY - rect.top) / crop.ds };
-  const h = e.target.closest("[data-h]");
+  const p = toSrc(e), h = e.target.closest("[data-h]");
   if (h) drag = { mode: "resize", hd: h.dataset.h, p0: p, r0: { ...crop.draft } };
   else if (e.target.closest("#cropbox")) drag = { mode: "move", p0: p, r0: { ...crop.draft } };
-  else drag = { mode: "new", p0: { x: clamp(p.x, 0, srcW), y: clamp(p.y, 0, srcH) } };
-  cropwrap.setPointerCapture(e.pointerId);
-  e.preventDefault();
+  else drag = { mode: "new", p0: { x: clamp(p.x, 0, W_), y: clamp(p.y, 0, H_) } };
+  cropwrap.setPointerCapture(e.pointerId); e.preventDefault();
 });
 cropwrap.addEventListener("pointermove", e => {
   if (!drag) return;
-  const rect = cropwrap.getBoundingClientRect();
-  const p = { x: (e.clientX - rect.left) / crop.ds, y: (e.clientY - rect.top) / crop.ds };
-  const dx = p.x - drag.p0.x, dy = p.y - drag.p0.y;
-  if (drag.mode === "move") {
-    crop.draft = { ...drag.r0, x: clamp(drag.r0.x + dx, 0, srcW - drag.r0.w), y: clamp(drag.r0.y + dy, 0, srcH - drag.r0.h) };
-  } else if (drag.mode === "resize") {
-    crop.draft = resizeRect(drag.r0, drag.hd, dx, dy, crop.ratio);
-  } else {
+  const p = toSrc(e), dx = p.x - drag.p0.x, dy = p.y - drag.p0.y;
+  if (drag.mode === "move") crop.draft = { ...drag.r0, x: clamp(drag.r0.x + dx, 0, W_ - drag.r0.w), y: clamp(drag.r0.y + dy, 0, H_ - drag.r0.h) };
+  else if (drag.mode === "resize") crop.draft = resizeRect(drag.r0, drag.hd, dx, dy, crop.ratio);
+  else {
     if (Math.abs(dx) < 3 && Math.abs(dy) < 3) return;
-    const hd = (dy < 0 ? "n" : "s") + (dx < 0 ? "w" : "e");
-    crop.draft = resizeRect({ x: drag.p0.x, y: drag.p0.y, w: 0, h: 0 }, hd, dx, dy, crop.ratio);
+    crop.draft = resizeRect({ x: drag.p0.x, y: drag.p0.y, w: 0, h: 0 }, (dy < 0 ? "n" : "s") + (dx < 0 ? "w" : "e"), dx, dy, crop.ratio);
   }
   drawBox();
 });
-const endDrag = () => { drag = null; };
-cropwrap.addEventListener("pointerup", endDrag);
-cropwrap.addEventListener("pointercancel", endDrag);
-
+cropwrap.addEventListener("pointerup", () => { drag = null; });
+cropwrap.addEventListener("pointercancel", () => { drag = null; });
 function syncCropInputs(r) {
-  [["#cx", r.x], ["#cy", r.y], ["#cw", r.w], ["#ch", r.h]].forEach(([s, v]) => {
-    const el = $(s); if (document.activeElement !== el) el.value = Math.round(v);
-  });
+  [["#cx", r.x], ["#cy", r.y], ["#cw", r.w], ["#ch", r.h]].forEach(([s, v]) => { const el = $(s); if (document.activeElement !== el) el.value = Math.round(v); });
 }
 ["#cx", "#cy", "#cw", "#ch"].forEach(s => $(s).addEventListener("input", () => {
-  if (!img) return;
   enterCrop();
-  const d = { ...crop.draft };
-  const v = parseFloat($(s).value); if (!isFinite(v)) return;
-  if (s === "#cx") d.x = clamp(v, 0, srcW - d.w);
-  if (s === "#cy") d.y = clamp(v, 0, srcH - d.h);
-  if (s === "#cw") { d.w = clamp(v, 1, srcW - d.x); if (crop.ratio) d.h = Math.min(d.w / crop.ratio, srcH - d.y), d.w = d.h * crop.ratio; }
-  if (s === "#ch") { d.h = clamp(v, 1, srcH - d.y); if (crop.ratio) d.w = Math.min(d.h * crop.ratio, srcW - d.x), d.h = d.w / crop.ratio; }
+  const d = { ...crop.draft }, v = parseFloat($(s).value); if (!isFinite(v)) return;
+  if (s === "#cx") d.x = clamp(v, 0, W_ - d.w);
+  if (s === "#cy") d.y = clamp(v, 0, H_ - d.h);
+  if (s === "#cw") { d.w = clamp(v, 1, W_ - d.x); if (crop.ratio) { d.h = Math.min(d.w / crop.ratio, H_ - d.y); d.w = d.h * crop.ratio; } }
+  if (s === "#ch") { d.h = clamp(v, 1, H_ - d.y); if (crop.ratio) { d.w = Math.min(d.h * crop.ratio, W_ - d.x); d.h = d.w / crop.ratio; } }
   crop.draft = d; drawBox();
 }));
-
-$("#ratios").addEventListener("click", e => { const b = e.target.closest("[data-ratio]"); if (b && img) setRatio(b.dataset.ratio); });
-$("#cropStart").addEventListener("click", () => img && enterCrop());
+$("#ratios").addEventListener("click", e => { const b = e.target.closest("[data-ratio]"); if (b) setRatio(b.dataset.ratio); });
+$("#cropStart").addEventListener("click", enterCrop);
 $("#cropApply").addEventListener("click", applyCrop);
 $("#cropCancel").addEventListener("click", exitCrop);
 $("#cropAll").addEventListener("click", () => {
-  crop.draft = crop.ratio ? fitRatio(crop.ratio, { x: 0, y: 0, w: srcW, h: srcH }) : { x: 0, y: 0, w: srcW, h: srcH };
-  drawBox();
+  const all = { x: 0, y: 0, w: W_, h: H_ };
+  crop.draft = crop.ratio ? fitRatio(crop.ratio, all) : all; drawBox();
 });
 
-/* ---------- resize ---------- */
-function setOut(w, h) {
-  S.outW = clamp(Math.round(w) || 1, 1, MAX_OUT);
-  S.outH = clamp(Math.round(h) || 1, 1, MAX_OUT);
-  syncUI(true); scheduleRender();
+/* ============ resize ============ */
+function setOut(st, w, h) { st.outW = clamp(Math.round(w) || 1, 1, MAX_OUT); st.outH = clamp(Math.round(h) || 1, 1, MAX_OUT); }
+function applySizeRule(it, rule) {
+  const c = it.st.crop;
+  const k = rule.type === "pct" ? rule.v : rule.v / Math.max(c.w, c.h);
+  setOut(it.st, c.w * k, c.h * k);
 }
 $("#ow").addEventListener("input", e => {
   const v = parseFloat(e.target.value); if (!isFinite(v) || v < 1) return;
-  setOut(v, S.lock ? v * S.crop.h / S.crop.w : S.outH);
+  setOut(P, v, P.lock ? v * P.crop.h / P.crop.w : P.outH); syncUI(true); scheduleRender();
 });
 $("#oh").addEventListener("input", e => {
   const v = parseFloat(e.target.value); if (!isFinite(v) || v < 1) return;
-  setOut(S.lock ? v * S.crop.w / S.crop.h : S.outW, v);
+  setOut(P, P.lock ? v * P.crop.w / P.crop.h : P.outW, v); syncUI(true); scheduleRender();
 });
 ["#ow", "#oh"].forEach(s => $(s).addEventListener("change", () => { syncUI(); commit(); }));
 $("#lock").addEventListener("click", () => {
-  S.lock = !S.lock;
-  if (S.lock) setOut(S.outW, S.outW * S.crop.h / S.crop.w); else syncUI();
-  commit();
+  P.lock = !P.lock;
+  if (P.lock) setOut(P, P.outW, P.outW * P.crop.h / P.crop.w);
+  syncUI(); scheduleRender(); commit();
 });
-document.querySelectorAll("[data-pct]").forEach(b => b.addEventListener("click", () => {
-  const p = parseFloat(b.dataset.pct); setOut(S.crop.w * p, S.crop.h * p); commit();
-}));
-document.querySelectorAll("[data-long]").forEach(b => b.addEventListener("click", () => {
-  const L = parseFloat(b.dataset.long), k = L / Math.max(S.crop.w, S.crop.h);
-  setOut(S.crop.w * k, S.crop.h * k); commit();
-}));
+function sizeChip(rule) {
+  const all = items.length > 1 && $("#sizeAll").checked;
+  if (all) { G.sizeRule = rule; items.forEach(it => applySizeRule(it, rule)); toast(`${items.length}장 모두 크기를 바꿨습니다.`); }
+  else applySizeRule(cur, rule);
+  syncUI(); scheduleRender(); commit();
+}
+$$("[data-pct]").forEach(b => b.addEventListener("click", () => sizeChip({ type: "pct", v: parseFloat(b.dataset.pct) })));
+$$("[data-long]").forEach(b => b.addEventListener("click", () => sizeChip({ type: "long", v: parseFloat(b.dataset.long) })));
+$("#sizeAll").addEventListener("change", e => { if (!e.target.checked) G.sizeRule = null; });
 
-/* ---------- bound sliders ---------- */
+/* ============ shared (bound) controls ============ */
+const LIM = { opacity: [0, 100], "shadow.alpha": [0, 100], "border.width": [0, 5000], "border.radius": [0, 5000], "shadow.blur": [0, 5000],
+  pad: [0, 5000], "mask.edge": [0, 100], "mask.feather": [0, 200], "mask.tol": [1, 100] };
+function readBound(el) {
+  if (el.type === "checkbox") return el.checked;
+  if (el.type === "radio") return el.checked ? el.value : null;
+  if (el.type === "color") return el.value;
+  const v = parseFloat(el.value); if (!isFinite(v)) return null;
+  const lim = LIM[el.dataset.bind] || [-5000, 5000];
+  return Math.round(clamp(v, lim[0], lim[1]));
+}
+function writeBound(el, v) {
+  if (el.type === "checkbox") el.checked = !!v; else if (el.type === "radio") el.checked = el.value === v; else el.value = v;
+}
 document.addEventListener("input", e => {
-  const el = e.target; const p = el.dataset && el.dataset.bind; if (!p || !S) return;
-  let v;
-  if (el.type === "checkbox") v = el.checked;
-  else if (el.type === "color") v = el.value;
-  else { v = parseFloat(el.value); if (!isFinite(v)) return; }
-  if (typeof v === "number") {
-    if (p === "opacity" || p === "shadow.alpha") v = clamp(v, 0, 100);
-    else if (p === "border.width" || p === "border.radius" || p === "shadow.blur") v = clamp(v, 0, 5000);
-    else v = clamp(v, -5000, 5000);
-    v = Math.round(v);
-  }
-  setP(S, p, v);
-  $$(`[data-bind="${p}"]`).forEach(o => { if (o !== el) { if (o.type === "checkbox") o.checked = v; else o.value = v; } });
-  if (p === "shadow.on") $("#shFields").disabled = !v;
-  updateSummaries(); updateMaxes(); scheduleRender();
+  const el = e.target, p = el.dataset && el.dataset.bind; if (!p || !cur) return;
+  const v = readBound(el); if (v === null) return;
+  setP(G, p, v);
+  $$(`[data-bind="${p}"]`).forEach(o => { if (o !== el) writeBound(o, v); });
+  syncDisabled(); updateSummaries(); updateMaxes(); scheduleRender();
 });
-document.addEventListener("change", e => { if (e.target.dataset && e.target.dataset.bind && S) commit(); });
+document.addEventListener("change", e => { if (e.target.dataset && e.target.dataset.bind && cur) commit(); });
 $$("[data-sw]").forEach(b => b.addEventListener("click", () => {
-  S.border.color = b.dataset.sw;
-  if (S.border.width === 0) S.border.width = Math.max(4, Math.round(Math.min(S.outW, S.outH) * 0.03));
+  if (b.dataset.sw === "border") {
+    G.border.color = b.dataset.c;
+    if (G.border.width === 0) G.border.width = Math.max(4, Math.round(Math.min(P.outW, P.outH) * 0.03));
+  } else { G.bg.color = b.dataset.c; G.bg.on = true; }
   syncUI(); scheduleRender(); commit();
 }));
-
+function syncDisabled() {
+  $("#shFields").disabled = !G.shadow.on;
+  $("#bgFields").disabled = !G.bg.on;
+  const ai = G.mask.mode === "ai";
+  $("#aiOpts").hidden = !ai; $("#colorOpts").hidden = ai; $("#edgeField").hidden = !ai;
+  $("#modelHint").textContent = G.mask.model === "general"
+    ? "사물·동물·사람 모두 대략 잡아냅니다. 처음 한 번 4.6MB 모델을 내려받고, 사진 한 장에 2초 안팎 걸립니다."
+    : "사람을 머리카락까지 깔끔하게 오려 냅니다. 처음 한 번 44MB 모델을 내려받고, 사진 한 장에 10초 안팎 걸립니다.";
+  $("#maskRefine").disabled = !(P && P.mask && cur.maskRaw);
+}
 function updateMaxes() {
-  const m = Math.max(S.outW, S.outH), n = Math.min(S.outW, S.outH);
-  $("#bw").max = Math.max(50, Math.round(n / 4), S.border.width);
-  const g = geom(1);
-  $("#br").max = Math.max(10, Math.floor(Math.min(g.lwf, g.lhf) / 2), S.border.radius);
+  const m = Math.max(P.outW, P.outH), n = Math.min(P.outW, P.outH);
+  $("#bw").max = Math.max(50, Math.round(n / 4), G.border.width);
+  const g = geom(1, P);
+  $("#br").max = Math.max(10, Math.floor(Math.min(g.lwf, g.lhf) / 2), G.border.radius);
   const sm = Math.max(50, Math.round(m / 5));
-  $("#shx").min = -Math.max(sm, Math.abs(S.shadow.x)); $("#shx").max = Math.max(sm, Math.abs(S.shadow.x));
-  $("#shy").min = -Math.max(sm, Math.abs(S.shadow.y)); $("#shy").max = Math.max(sm, Math.abs(S.shadow.y));
-  $("#shb").max = Math.max(sm, S.shadow.blur);
+  for (const [id, v] of [["#shx", G.shadow.x], ["#shy", G.shadow.y]]) { const r = Math.max(sm, Math.abs(v)); $(id).min = -r; $(id).max = r; }
+  $("#shb").max = Math.max(sm, G.shadow.blur);
+  $("#pad").max = Math.max(100, Math.round(m / 4), G.pad);
 }
 
-/* ---------- UI sync ---------- */
+/* ============ UI sync ============ */
 function syncUI(keepFocus) {
-  $$("[data-bind]").forEach(el => {
-    const v = getP(S, el.dataset.bind);
-    if (el.type === "checkbox") el.checked = v; else el.value = v;
-  });
-  $("#shFields").disabled = !S.shadow.on;
+  $$("[data-bind]").forEach(el => writeBound(el, getP(G, el.dataset.bind)));
   const ow = $("#ow"), oh = $("#oh");
-  if (!keepFocus || document.activeElement !== ow) ow.value = S.outW;
-  if (!keepFocus || document.activeElement !== oh) oh.value = S.outH;
-  $("#lock").setAttribute("aria-pressed", String(S.lock));
-  if (!crop.active) syncCropInputs(S.crop);
-  updateMaxes(); updateSummaries();
+  if (!keepFocus || document.activeElement !== ow) ow.value = P.outW;
+  if (!keepFocus || document.activeElement !== oh) oh.value = P.outH;
+  $("#lock").setAttribute("aria-pressed", String(P.lock));
+  $("#maskOn").checked = !!(P.mask && cur.maskRaw);
+  if (!crop.active) syncCropInputs(P.crop);
+  syncDisabled(); updateMaxes(); updateSummaries();
 }
 function setSum(id, text, on) { const el = $(id); el.textContent = text; el.classList.toggle("on", !!on); }
 function updateSummaries() {
-  if (!S) return;
-  const c = crop.active ? crop.draft : S.crop;
-  const full = c.x === 0 && c.y === 0 && Math.round(c.w) === srcW && Math.round(c.h) === srcH;
+  if (!P) return;
+  const c = crop.active ? crop.draft : P.crop;
+  const full = Math.round(c.x) === 0 && Math.round(c.y) === 0 && Math.round(c.w) === cur.srcW && Math.round(c.h) === cur.srcH;
   setSum("#sumCrop", full ? "전체" : `${Math.round(c.w)}×${Math.round(c.h)}`, !full);
-  const pw = Math.round(S.outW / S.crop.w * 100), ph = Math.round(S.outH / S.crop.h * 100);
-  setSum("#sumSize", `${S.outW}×${S.outH} · ${pw === ph ? pw + "%" : pw + "/" + ph + "%"}`, pw !== 100 || ph !== 100);
-  const b = S.border;
+  const pw = Math.round(P.outW / P.crop.w * 100), ph = Math.round(P.outH / P.crop.h * 100);
+  setSum("#sumSize", `${P.outW}×${P.outH} · ${pw === ph ? pw + "%" : pw + "/" + ph + "%"}`, pw !== 100 || ph !== 100);
+  const b = G.border;
   setSum("#sumBorder", b.width || b.radius ? [b.width ? b.width + "px" : "", b.radius ? "R" + b.radius : ""].filter(Boolean).join(" · ") : "없음", b.width || b.radius);
-  setSum("#sumOpacity", S.opacity + "%", S.opacity !== 100);
-  setSum("#sumShadow", S.shadow.on ? "켜짐" : "꺼짐", S.shadow.on);
-  const g = geom(1);
+  setSum("#sumOpacity", G.opacity + "%", G.opacity !== 100);
+  setSum("#sumShadow", G.shadow.on ? "켜짐" : "꺼짐", G.shadow.on);
+  setSum("#sumBg", G.bg.on ? G.bg.color.toUpperCase() : "투명", G.bg.on);
+  const mk = cur.maskRaw ? (cur.maskRaw.kind === "ai" ? (cur.maskRaw.model === "portrait" ? "인물" : "일반") : "단색") : "";
+  setSum("#sumMask", P.mask && cur.maskRaw ? `적용 · ${mk}` : cur.maskRaw ? "꺼짐" : "없음", P.mask && cur.maskRaw);
+  const g = geom(1, P);
   setSum("#sumExport", `${g.W}×${g.H}`);
 }
 
-/* ---------- load ---------- */
-function setImage(src, name, sample) {
-  img = src; srcW = src.naturalWidth || src.width; srcH = src.naturalHeight || src.height;
-  fileBase = name; isSample = sample;
-  proxyScale = Math.min(1, 2400 / Math.max(srcW, srcH));
-  const pw = Math.max(1, Math.round(srcW * proxyScale)), ph = Math.max(1, Math.round(srcH * proxyScale));
-  const s = stepDown(img, 0, 0, srcW, srcH, pw, ph);
-  proxy = document.createElement("canvas"); proxy.width = pw; proxy.height = ph;
-  const pc = proxy.getContext("2d"); pc.imageSmoothingQuality = "high";
-  pc.drawImage(s.src, s.sx, s.sy, s.sw, s.sh, 0, 0, pw, ph);
-  proxyScale = pw / srcW;
+/* ============ auto mask ============ */
+const MODELS = {
+  general: { url: "https://huggingface.co/BritishWerewolf/U-2-Netp/resolve/main/onnx/model.onnx", size: 320, norm: true, mb: 4.6, minmax: true },
+  portrait: { url: "https://huggingface.co/onnx-community/ormbg-ONNX/resolve/main/onnx/model_quantized.onnx", size: 1024, norm: false, mb: 44.4, minmax: false }
+};
+const ORT_URL = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/ort.min.js";
+let ortP = null; const sessions = {};
+function loadOrt() {
+  if (window.ort) return Promise.resolve(window.ort);
+  if (!ortP) ortP = new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = ORT_URL; s.crossOrigin = "anonymous";
+    s.onload = () => window.ort ? res(window.ort) : rej(new Error("ort"));
+    s.onerror = () => { ortP = null; rej(new Error("AI 엔진을 불러오지 못했습니다.")); };
+    document.head.appendChild(s);
+  });
+  return ortP;
+}
+async function fetchModel(m, onp) {
+  let cache = null;
+  try { cache = await caches.open("lightbox-models-v1"); const hit = await cache.match(m.url); if (hit) return new Uint8Array(await hit.arrayBuffer()); } catch (e) { cache = null; }
+  const res = await fetch(m.url);
+  if (!res.ok) throw new Error("모델 다운로드 실패 (" + res.status + ")");
+  const total = +res.headers.get("content-length") || m.mb * 1e6;
+  const rd = res.body.getReader(), parts = []; let got = 0;
+  for (;;) { const { done, value } = await rd.read(); if (done) break; parts.push(value); got += value.length; onp(Math.min(1, got / total)); }
+  const buf = new Uint8Array(got); let o = 0; for (const p of parts) { buf.set(p, o); o += p.length; }
+  try { if (cache) await cache.put(m.url, new Response(buf)); } catch (e) {}
+  return buf;
+}
+async function getSession(key) {
+  if (sessions[key]) return sessions[key];
+  const m = MODELS[key];
+  busy("AI 엔진 준비 중", null, "처음 한 번만 필요합니다.");
+  const ort = await loadOrt();
+  ort.env.wasm.numThreads = 1;
+  busy("모델 내려받는 중", 0, `${m.mb}MB · 다음부터는 바로 시작합니다.`);
+  const buf = await fetchModel(m, f => busy("모델 내려받는 중", f, `${Math.round(f * m.mb * 10) / 10} / ${m.mb}MB · 다음부터는 바로 시작합니다.`));
+  busy("모델 여는 중", null, "");
+  await tick();
+  sessions[key] = await ort.InferenceSession.create(buf, { executionProviders: ["wasm"] });
+  return sessions[key];
+}
+const tick = () => new Promise(r => setTimeout(r, 30));
+async function aiRaw(it, key) {
+  const m = MODELS[key], ses = await getSession(key), N = m.size * m.size;
+  const c = resample(it.img, it.srcW, it.srcH, m.size, m.size);
+  const d = c.getContext("2d").getImageData(0, 0, m.size, m.size).data, f = new Float32Array(3 * N);
+  const mean = m.norm ? [0.485, 0.456, 0.406] : [0, 0, 0], std = m.norm ? [0.229, 0.224, 0.225] : [1, 1, 1];
+  for (let i = 0; i < N; i++) for (let k = 0; k < 3; k++) f[k * N + i] = (d[i * 4 + k] / 255 - mean[k]) / std[k];
+  const feeds = {}; feeds[ses.inputNames[0]] = new window.ort.Tensor("float32", f, [1, 3, m.size, m.size]);
+  await tick();
+  const out = await ses.run(feeds), o = out[ses.outputNames[0]].data;
+  let mn = 0, mx = 1;
+  if (m.minmax) { mn = Infinity; mx = -Infinity; for (let i = 0; i < N; i++) { if (o[i] < mn) mn = o[i]; if (o[i] > mx) mx = o[i]; } }
+  const span = (mx - mn) || 1, raw = new Uint8Array(N);
+  for (let i = 0; i < N; i++) raw[i] = clamp(Math.round((o[i] - mn) / span * 255), 0, 255);
+  return { kind: "ai", model: key, w: m.size, h: m.size, data: raw };
+}
+function colorRaw(it) {
+  const k = Math.min(1, COLOR_MASK_EDGE / Math.max(it.srcW, it.srcH));
+  const w = Math.max(1, Math.round(it.srcW * k)), h = Math.max(1, Math.round(it.srcH * k));
+  const d = resample(it.img, it.srcW, it.srcH, w, h).getContext("2d").getImageData(0, 0, w, h).data;
+  const R = [], Gc = [], B = [];
+  const pushPx = i => { R.push(d[i * 4]); Gc.push(d[i * 4 + 1]); B.push(d[i * 4 + 2]); };
+  for (let x = 0; x < w; x++) { pushPx(x); pushPx((h - 1) * w + x); }
+  for (let y = 0; y < h; y++) { pushPx(y * w); pushPx(y * w + w - 1); }
+  const med = a => { a.sort((p, q) => p - q); return a[a.length >> 1]; };
+  const br = med(R), bgc = med(Gc), bb = med(B), dist = new Uint8Array(w * h);
+  for (let i = 0; i < w * h; i++) {
+    const dr = d[i * 4] - br, dg = d[i * 4 + 1] - bgc, db = d[i * 4 + 2] - bb;
+    dist[i] = Math.min(255, Math.round(Math.sqrt(dr * dr + dg * dg + db * db) / 1.732));
+  }
+  return { kind: "color", w, h, data: dist, alphaIn: d };
+}
+function getMask(it) {
+  const r = it.maskRaw; if (!r) return null;
+  const key = [r.kind, r.model, G.mask.edge, G.mask.invert, r.kind === "color" ? G.mask.tol : ""].join("|");
+  if (it.maskC && it.maskKey === key) return it.maskC;
+  const n = r.w * r.h, a = new Uint8Array(n);
+  if (r.kind === "ai") {
+    const wdt = 1 - G.mask.edge / 100 * 0.92, lo = (0.5 - wdt / 2) * 255, hi = (0.5 + wdt / 2) * 255;
+    for (let i = 0; i < n; i++) a[i] = clamp(Math.round((r.data[i] - lo) / (hi - lo) * 255), 0, 255);
+  } else {
+    const T = G.mask.tol * 1.28, T2 = T * 1.4 + 6, dist = r.data, w = r.w, h = r.h;
+    a.fill(255);
+    const seen = new Uint8Array(n), q = new Int32Array(n); let qh = 0, qt = 0;
+    const seed = i => { if (!seen[i] && dist[i] < T2) { seen[i] = 1; q[qt++] = i; } };
+    for (let x = 0; x < w; x++) { seed(x); seed((h - 1) * w + x); }
+    for (let y = 0; y < h; y++) { seed(y * w); seed(y * w + w - 1); }
+    while (qh < qt) {
+      const i = q[qh++], dv = dist[i];
+      a[i] = dv <= T ? 0 : Math.round((dv - T) / (T2 - T) * 255);
+      const x = i % w;
+      if (x > 0) seed(i - 1); if (x < w - 1) seed(i + 1); if (i >= w) seed(i - w); if (i < n - w) seed(i + w);
+    }
+    if (r.alphaIn) for (let i = 0; i < n; i++) a[i] = Math.min(a[i], r.alphaIn[i * 4 + 3]);
+  }
+  if (G.mask.invert) for (let i = 0; i < n; i++) a[i] = 255 - a[i];
+  const c = it.maskC && it.maskC.width === r.w && it.maskC.height === r.h ? it.maskC : newCanvas(r.w, r.h);
+  const g = c.getContext("2d"), id = g.createImageData(r.w, r.h);
+  for (let i = 0; i < n; i++) { const j = i * 4; id.data[j] = id.data[j + 1] = id.data[j + 2] = 255; id.data[j + 3] = a[i]; }
+  g.putImageData(id, 0, 0);
+  it.maskC = c; it.maskKey = key;
+  return c;
+}
+let masking = false;
+async function runMask(list) {
+  if (masking) return; masking = true;
   if (crop.active) exitCrop();
-  crop.ratio = null; crop.ratioKey = "free";
-  $$("#ratios .chip").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.ratio === "free")));
-  S = defaults(); hist = []; hi = -1; commit();
-  syncUI(); scheduleRender();
+  const mode = G.mask.mode, key = G.mask.model;
+  let done = 0, failed = null;
+  try {
+    for (const it of list) {
+      const label = list.length > 1 ? `배경 지우는 중 ${done + 1}/${list.length}` : "배경 지우는 중";
+      if (mode === "ai") {
+        if (sessions[key]) busy(label, list.length > 1 ? done / list.length : null, key === "portrait" ? "인물 정밀 모드는 한 장에 10초 안팎 걸립니다." : "");
+        const raw = await aiRaw(it, key);
+        busy(label, list.length > 1 ? done / list.length : null, "");
+        it.maskRaw = raw;
+      } else {
+        busy(label, list.length > 1 ? done / list.length : null, ""); await tick();
+        it.maskRaw = colorRaw(it);
+      }
+      it.maskC = null; it.maskKey = ""; it.st.mask = true; done++;
+      if (list.length > 1) busy(`배경 지우는 중 ${Math.min(done + 1, list.length)}/${list.length}`, done / list.length, "");
+    }
+  } catch (err) {
+    failed = err;
+  } finally {
+    masking = false; busyEnd();
+    syncUI(); renderStrip(); scheduleRender(); commit();
+  }
+  if (failed) {
+    console.error(failed);
+    const blocked = location.hostname.endsWith("claude.ai") || location.hostname.endsWith("claudeusercontent.com");
+    toast(blocked ? "이 화면에서는 AI 모델을 내려받을 수 없습니다. 웹사이트 버전에서 쓰거나 ‘단색 배경 지우기’를 쓰세요."
+                  : "AI 모델을 불러오지 못했습니다. 인터넷 연결을 확인하거나 ‘단색 배경 지우기’를 써 보세요.", true);
+  } else toast(done > 1 ? `${done}장의 배경을 지웠습니다.` : mode === "ai" ? "배경을 지웠습니다. 경계·부드럽게로 다듬을 수 있습니다." : "배경을 지웠습니다. 허용 범위·부드럽게로 다듬을 수 있습니다.");
 }
-function loadFile(f) {
-  if (!f) return;
-  if (f.type && !f.type.startsWith("image/")) { toast("이미지 파일만 열 수 있습니다. JPG, PNG, WebP, GIF를 지원합니다.", true); return; }
-  const url = URL.createObjectURL(f);
-  const im = new Image();
-  im.onload = () => {
-    if (lastUrl) URL.revokeObjectURL(lastUrl);
-    lastUrl = url;
-    if (im.naturalWidth * im.naturalHeight > 120e6) toast("아주 큰 사진이라 저장에 시간이 걸릴 수 있습니다.");
-    setImage(im, (f.name || "사진").replace(/\.[^.]+$/, "") || "사진", false);
-  };
-  im.onerror = () => { URL.revokeObjectURL(url); toast("이 파일은 브라우저가 읽지 못합니다. HEIC라면 JPG로 변환해서 열어 주세요.", true); };
-  im.src = url;
-}
-$("#file").addEventListener("change", e => { loadFile(e.target.files[0]); e.target.value = ""; });
+$("#maskRun").addEventListener("click", () => runMask([cur]));
+$("#maskRunAll").addEventListener("click", () => runMask(items.slice()));
+$("#maskOn").addEventListener("change", e => {
+  if (e.target.checked && !cur.maskRaw) { e.target.checked = false; runMask([cur]); return; }
+  P.mask = e.target.checked; syncUI(); renderStrip(); scheduleRender(); commit();
+});
 
+/* ============ busy / toast ============ */
+function busy(title, frac, sub) {
+  $("#busy").hidden = false; $("#busyT").textContent = title; $("#busyS").textContent = sub || "";
+  const m = $("#busyM"); m.classList.toggle("indet", frac == null);
+  $("#busyBar").style.width = frac == null ? "" : Math.round(frac * 100) + "%";
+}
+function busyEnd() { $("#busy").hidden = true; }
+let toastT = 0;
+function toast(msg, err) {
+  const t = $("#toast"); t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("show");
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), err ? 5000 : 2800);
+}
+
+/* ============ loading ============ */
+function loadImageFile(f) {
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(f), im = new Image();
+    im.onload = () => res({ im, url });
+    im.onerror = () => { URL.revokeObjectURL(url); rej(new Error("decode")); };
+    im.src = url;
+  });
+}
+async function addFiles(files) {
+  const list = [...files].filter(f => !f.type || f.type.startsWith("image/"));
+  if (!list.length) { toast("이미지 파일만 열 수 있습니다. JPG, PNG, WebP, GIF를 지원합니다.", true); return; }
+  if (list.length > 1) busy("사진 여는 중", 0, "");
+  const added = []; let failed = 0;
+  for (let i = 0; i < list.length; i++) {
+    try {
+      const { im, url } = await loadImageFile(list[i]);
+      added.push(makeItem(im, (list[i].name || "photo").replace(/\.[^.]+$/, "") || "photo", false, url));
+    } catch (e) { failed++; }
+    if (list.length > 1) busy("사진 여는 중", (i + 1) / list.length, `${i + 1}/${list.length}`);
+    await tick();
+  }
+  busyEnd();
+  if (!added.length) { toast("이 파일은 브라우저가 읽지 못합니다. HEIC라면 JPG로 바꿔서 열어 주세요.", true); return; }
+  const wasSample = items.length === 1 && items[0].sample;
+  if (wasSample) {
+    items = [];
+    if (!G.shadow.on) { const base = Math.max(added[0].srcW, added[0].srcH) / 100; G.shadow.y = Math.round(base * 1.5); G.shadow.blur = Math.round(base * 3); }
+  }
+  items.push(...added);
+  select(added[0]);
+  if (wasSample) { hist = []; hi = -1; }
+  commit();
+  if (failed) toast(`${failed}개 파일은 열지 못했습니다(HEIC 등). 나머지 ${added.length}장을 추가했습니다.`, true);
+  else if (added.length > 1) toast(`${added.length}장을 추가했습니다. 아래 목록에서 사진을 고르세요.`);
+}
+$("#file").addEventListener("change", e => { addFiles(e.target.files); e.target.value = ""; });
 const drop = $("#drop"); let dragDepth = 0;
 window.addEventListener("dragenter", e => { if ([...(e.dataTransfer?.types || [])].includes("Files")) { dragDepth++; drop.hidden = false; } });
 window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) drop.hidden = true; });
 window.addEventListener("dragover", e => e.preventDefault());
-window.addEventListener("drop", e => {
-  e.preventDefault(); dragDepth = 0; drop.hidden = true;
-  const f = [...(e.dataTransfer?.files || [])].find(f => f.type.startsWith("image/")) || e.dataTransfer?.files[0];
-  loadFile(f);
-});
+window.addEventListener("drop", e => { e.preventDefault(); dragDepth = 0; drop.hidden = true; if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files); });
+window.addEventListener("pointerdown", () => { dragDepth = 0; drop.hidden = true; }, true);
 window.addEventListener("paste", e => {
-  const it = [...(e.clipboardData?.items || [])].find(i => i.type.startsWith("image/"));
-  if (it) { const f = it.getAsFile(); if (f) { loadFile(new File([f], "pasted-image." + f.type.split("/")[1], { type: f.type })); } }
+  const fs = [...(e.clipboardData?.items || [])].filter(i => i.type.startsWith("image/")).map(i => i.getAsFile()).filter(Boolean)
+    .map(f => new File([f], "pasted-image." + f.type.split("/")[1], { type: f.type }));
+  if (fs.length) addFiles(fs);
 });
 
-/* ---------- export ---------- */
+/* ============ export ============ */
 $$('input[name="fmt"]').forEach(r => r.addEventListener("change", () => {
   E.fmt = r.value;
-  $("#qField").hidden = E.fmt === "png";
-  $("#bgField").hidden = E.fmt !== "jpeg";
-  $("#fmtHint").textContent = E.fmt === "png" ? "PNG는 투명한 부분(투명도, 그림자, 둥근 모서리)을 그대로 보존합니다."
-    : E.fmt === "jpeg" ? "JPG는 투명한 부분을 지원하지 않아 배경색으로 채웁니다. 용량이 가장 작습니다."
+  $("#qField").hidden = E.fmt === "png"; $("#jbgField").hidden = E.fmt !== "jpeg";
+  $("#fmtHint").textContent = E.fmt === "png" ? "PNG는 투명한 부분(투명도, 그림자, 둥근 모서리, 마스크)을 그대로 보존합니다."
+    : E.fmt === "jpeg" ? "JPG는 투명한 부분을 담지 못해 ‘빈 곳’ 색으로 채웁니다. 배경을 켜 두면 배경색이 쓰입니다. 용량이 가장 작습니다."
     : "WebP는 투명한 부분을 보존하면서 PNG보다 용량이 작습니다.";
 }));
 $("#q").addEventListener("input", e => { E.quality = +e.target.value; $("#qn").value = E.quality; });
 $("#qn").addEventListener("input", e => { const v = parseFloat(e.target.value); if (isFinite(v)) { E.quality = clamp(Math.round(v), 40, 100); $("#q").value = E.quality; } });
-$("#bg").addEventListener("input", e => { E.bg = e.target.value; });
+$("#jbg").addEventListener("input", e => { E.jbg = e.target.value; });
 
+async function encode(it) {
+  let out = newCanvas();
+  const D = compose(1, out, true, it);
+  if (E.fmt === "jpeg") {
+    const j = newCanvas(D.W, D.H), jc = j.getContext("2d");
+    jc.fillStyle = E.jbg; jc.fillRect(0, 0, D.W, D.H); jc.drawImage(out, 0, 0); out = j;
+  }
+  const blob = await new Promise(r => out.toBlob(r, "image/" + E.fmt, E.quality / 100));
+  if (!blob) throw new Error("encode");
+  if (E.fmt === "webp" && blob.type !== "image/webp") throw new Error("webp");
+  return { blob, D };
+}
+const extOf = () => E.fmt === "jpeg" ? "jpg" : E.fmt;
 let dlP = null;
 function getDownloads() {
   if (!dlP) dlP = (window.claude && typeof window.claude.use === "function")
@@ -750,87 +1113,130 @@ function getDownloads() {
   return dlP;
 }
 getDownloads();
+async function deliver(filename, blob) {
+  const dl = await getDownloads();
+  if (dl) {
+    try { await dl.save({ filename, data: blob }); return true; }
+    catch (err) {
+      const code = err && err.code;
+      if (code === "declined") toast("저장을 취소했습니다.");
+      else if (code === "rate_limited") toast("저장 창이 이미 열려 있습니다. 잠시 후 다시 눌러 주세요.", true);
+      else toast("이 화면에서는 파일을 저장할 수 없습니다.", true);
+      return false;
+    }
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000);
+  return true;
+}
 const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + "MB" : Math.max(1, Math.round(n / 1024)) + "KB";
 let saving = false;
-async function save() {
-  if (!img || saving) return;
+function lockSave(on) { saving = on; ["#save", "#saveTop", "#saveAll"].forEach(s => $(s).disabled = on); }
+async function saveOne() {
+  if (!cur || saving || masking) return;
   if (crop.active) applyCrop();
-  saving = true; $("#save").disabled = $("#saveTop").disabled = true;
-  $("#save").textContent = "만드는 중…";
+  lockSave(true); busy("이미지 만드는 중", null, "");
   try {
-    let out = document.createElement("canvas");
-    const D = compose(1, out, true);
-    if (E.fmt === "jpeg") {
-      const j = document.createElement("canvas"); j.width = D.W; j.height = D.H;
-      const jc = j.getContext("2d"); jc.fillStyle = E.bg; jc.fillRect(0, 0, D.W, D.H); jc.drawImage(out, 0, 0);
-      out = j;
-    }
-    const mime = "image/" + E.fmt;
-    const blob = await new Promise(r => out.toBlob(r, mime, E.quality / 100));
-    if (!blob) throw new Error("encode");
-    const ext = E.fmt === "jpeg" ? "jpg" : E.fmt;
-    if (E.fmt === "webp" && blob.type !== "image/webp") { toast("이 브라우저는 WebP 저장을 지원하지 않습니다. PNG나 JPG를 골라 주세요.", true); return; }
-    const filename = `${fileBase}-edited.${ext}`;
-    const dl = await getDownloads();
-    if (dl) {
-      try { await dl.save({ filename, data: blob }); toast(`저장했습니다 · ${D.W}×${D.H} · ${fmtSize(blob.size)}`); }
-      catch (err) {
-        const code = err && err.code;
-        if (code === "declined") toast("저장을 취소했습니다.");
-        else if (code === "rate_limited") toast("저장 창이 이미 열려 있습니다. 잠시 후 다시 눌러 주세요.", true);
-        else if (code === "host_unavailable") toast("이 앱에서는 파일을 저장할 수 없습니다. 브라우저나 컴퓨터에서 열어 주세요.", true);
-        else toast("이 화면에서는 저장할 수 없습니다.", true);
-      }
-    } else {
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob); a.download = filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast(`저장했습니다 · ${D.W}×${D.H} · ${fmtSize(blob.size)}`);
-    }
+    await tick();
+    const { blob, D } = await encode(cur);
+    busyEnd();
+    if (await deliver(`${cur.name}-edited.${extOf()}`, blob)) toast(`저장했습니다 · ${D.W}×${D.H} · ${fmtSize(blob.size)}`);
   } catch (err) {
-    toast("이미지를 만들지 못했습니다. 크기를 줄여서 다시 시도해 보세요.", true);
-  } finally {
-    saving = false; $("#save").disabled = $("#saveTop").disabled = false; $("#save").textContent = "저장";
+    busyEnd();
+    toast(err.message === "webp" ? "이 브라우저는 WebP 저장을 지원하지 않습니다. PNG나 JPG를 골라 주세요." : "이미지를 만들지 못했습니다. 크기를 줄여서 다시 시도해 보세요.", true);
+  } finally { lockSave(false); }
+}
+/* minimal ZIP writer (stored, no compression; images are already compressed) */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8) { let c = 0xFFFFFFFF; for (let i = 0; i < u8.length; i++) c = CRC[(c ^ u8[i]) & 255] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function makeZip(files) {
+  const enc = new TextEncoder(), parts = [], central = []; let off = 0;
+  const d = new Date(), time = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1),
+    date = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  for (const f of files) {
+    const name = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, time, true); lh.setUint16(12, date, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, size, true); lh.setUint32(22, size, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(lh.buffer, name, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, time, true); ch.setUint16(14, date, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, size, true); ch.setUint32(24, size, true); ch.setUint16(28, name.length, true);
+    ch.setUint32(42, off, true);
+    central.push(ch.buffer, name);
+    off += 30 + name.length + size;
   }
+  const cdSize = central.reduce((s, p) => s + p.byteLength, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, off, true);
+  return new Blob([...parts, ...central, end.buffer], { type: "application/zip" });
 }
-$("#save").addEventListener("click", save);
-$("#saveTop").addEventListener("click", save);
+async function saveAll() {
+  if (saving || masking || items.length < 2) return;
+  if (crop.active) applyCrop();
+  lockSave(true);
+  const files = [], used = new Set(); let total = 0;
+  try {
+    for (let i = 0; i < items.length; i++) {
+      busy(`이미지 만드는 중 ${i + 1}/${items.length}`, i / items.length, ""); await tick();
+      const { blob } = await encode(items[i]);
+      let base = `${items[i].name}-edited`, name = `${base}.${extOf()}`, k = 2;
+      while (used.has(name)) name = `${base}-${k++}.${extOf()}`;
+      used.add(name); total += blob.size;
+      files.push({ name, data: new Uint8Array(await blob.arrayBuffer()) });
+    }
+    busy("ZIP으로 묶는 중", 1, ""); await tick();
+    const zip = makeZip(files); busyEnd();
+    if (await deliver(`lightbox-${files.length}.zip`, zip)) toast(`${files.length}장을 ZIP으로 저장했습니다 · ${fmtSize(zip.size)}`);
+  } catch (err) {
+    busyEnd();
+    toast(err.message === "webp" ? "이 브라우저는 WebP 저장을 지원하지 않습니다. PNG나 JPG를 골라 주세요." : "이미지를 만들지 못했습니다. 크기를 줄여서 다시 시도해 보세요.", true);
+  } finally { lockSave(false); }
+}
+$("#save").addEventListener("click", saveOne);
+$("#saveTop").addEventListener("click", () => items.length > 1 ? saveAll() : saveOne());
+$("#saveAll").addEventListener("click", saveAll);
 
-/* ---------- misc ---------- */
-let toastT = 0;
-function toast(msg, err) {
-  const t = $("#toast"); t.textContent = msg; t.classList.toggle("err", !!err); t.classList.add("show");
-  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove("show"), err ? 4200 : 2600);
-}
+/* ============ misc ============ */
 $("#undo").addEventListener("click", undo);
 $("#redo").addEventListener("click", redo);
 $("#resetAll").addEventListener("click", () => {
-  if (!img) return; if (crop.active) exitCrop();
-  S = defaults(); syncUI(); scheduleRender(); commit(); toast("원본 상태로 되돌렸습니다. 되돌리기로 취소할 수 있습니다.");
+  if (crop.active) exitCrop();
+  const keepShadow = { y: G.shadow.y, blur: G.shadow.blur };
+  for (const k in G0) G[k] = JSON.parse(JSON.stringify(G0[k]));
+  Object.assign(G.shadow, keepShadow);
+  cur.st = freshSt(cur); P = cur.st;
+  syncUI(); renderStrip(); scheduleRender(); commit();
+  toast("이 사진과 공통 효과를 처음 상태로 돌렸습니다. 되돌리기로 취소할 수 있습니다.");
 });
 window.addEventListener("keydown", e => {
-  const typing = /^(INPUT|SELECT|TEXTAREA)$/.test(document.activeElement?.tagName) && !["range", "checkbox", "radio", "color"].includes(document.activeElement.type);
-  const mod = e.ctrlKey || e.metaKey;
-  if (mod && e.key.toLowerCase() === "z" && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-  else if (mod && e.key.toLowerCase() === "y" && !typing) { e.preventDefault(); redo(); }
-  else if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); save(); }
+  const ae = document.activeElement;
+  const typing = ae && /^(INPUT|SELECT|TEXTAREA)$/.test(ae.tagName) && !["range", "checkbox", "radio", "color"].includes(ae.type);
+  const mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+  if (mod && k === "z" && !typing) { e.preventDefault(); e.shiftKey ? redo() : undo(); }
+  else if (mod && k === "y" && !typing) { e.preventDefault(); redo(); }
+  else if (mod && k === "s") { e.preventDefault(); saveOne(); }
   else if (crop.active && e.key === "Enter") { e.preventDefault(); applyCrop(); }
   else if (crop.active && e.key === "Escape") { e.preventDefault(); exitCrop(); }
+  else if (!typing && !crop.active && items.length > 1 && (e.key === "]" || e.key === "[")) {
+    const i = items.indexOf(cur) + (e.key === "]" ? 1 : -1); if (items[i]) select(items[i]);
+  }
 });
 new ResizeObserver(() => scheduleRender()).observe(viewport);
 
-/* ---------- example image (generated, so the tool opens in a working state) ---------- */
+/* ============ example image ============ */
 function makeSample() {
-  const W = 1600, H = 1067, c = document.createElement("canvas"); c.width = W; c.height = H;
-  const g = c.getContext("2d");
+  const W = 1600, H = 1067, c = newCanvas(W, H), g = c.getContext("2d");
   let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const horizon = 700;
-  const sky = g.createLinearGradient(0, 0, 0, horizon);
+  const horizon = 700, sky = g.createLinearGradient(0, 0, 0, horizon);
   sky.addColorStop(0, "#22305a"); sky.addColorStop(.45, "#7b5b8c"); sky.addColorStop(.8, "#f09a6b"); sky.addColorStop(1, "#ffd5a3");
   g.fillStyle = sky; g.fillRect(0, 0, W, horizon);
-  const sx = 1040, sy = 610;
-  const glow = g.createRadialGradient(sx, sy, 10, sx, sy, 420);
+  const sx = 1040, sy = 610, glow = g.createRadialGradient(sx, sy, 10, sx, sy, 420);
   glow.addColorStop(0, "rgba(255,240,200,.9)"); glow.addColorStop(.2, "rgba(255,210,150,.45)"); glow.addColorStop(1, "rgba(255,180,120,0)");
   g.fillStyle = glow; g.fillRect(0, 0, W, horizon);
   g.fillStyle = "#fff4d6"; g.beginPath(); g.arc(sx, sy, 72, 0, Math.PI * 2); g.fill();
@@ -841,9 +1247,7 @@ function makeSample() {
     pts.forEach(([x, yy]) => g.lineTo(x, yy)); g.lineTo(W, horizon); g.closePath(); g.fill();
     return pts;
   };
-  const r1 = ridge(520, 140, "#8d6a8f", 46);
-  const r2 = ridge(590, 120, "#5d4a72", 52);
-  const r3 = ridge(650, 80, "#352d4d", 40);
+  const r1 = ridge(520, 140, "#8d6a8f", 46), r2 = ridge(590, 120, "#5d4a72", 52), r3 = ridge(650, 80, "#352d4d", 40);
   const water = g.createLinearGradient(0, horizon, 0, H);
   water.addColorStop(0, "#e8a27c"); water.addColorStop(.35, "#6e5677"); water.addColorStop(1, "#1d1c2e");
   g.fillStyle = water; g.fillRect(0, horizon, W, H - horizon);
@@ -855,14 +1259,18 @@ function makeSample() {
   g.restore();
   for (let i = 0; i < 90; i++) {
     const y = horizon + 8 + Math.pow(rnd(), 1.6) * (H - horizon - 10);
-    const len = 30 + rnd() * 160 * (1 - Math.abs(rnd() - .5));
-    const x = sx + (rnd() - .5) * (120 + (y - horizon) * 1.2);
+    const len = 30 + rnd() * 160 * (1 - Math.abs(rnd() - .5)), x = sx + (rnd() - .5) * (120 + (y - horizon) * 1.2);
     g.strokeStyle = `rgba(255,226,180,${.15 + rnd() * .35})`; g.lineWidth = 1 + rnd() * 2;
     g.beginPath(); g.moveTo(x - len / 2, y); g.lineTo(x + len / 2, y); g.stroke();
   }
   return c;
 }
-setImage(makeSample(), "sample-sunset", true);
+function addSample() {
+  const it = makeItem(makeSample(), "sample-sunset", true, null);
+  items = [it]; hist = []; hi = -1;
+  select(it); commit();
+}
+addSample();
 })();
 </script>
 </body>
