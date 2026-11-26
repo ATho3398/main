@@ -83,6 +83,13 @@ button,input,select{font:inherit;color:inherit}
 .pv-l{background:var(--pv-light)}.pv-d{background:var(--pv-dark)}
 .pvsel input[type=color]{inline-size:24px;block-size:20px;padding:1px;border-radius:4px}
 .viewport{transition:background-color .15s}
+.pvsw{position:relative;display:inline-flex}
+.pvsel .pvsw .del{position:absolute;top:-7px;right:-7px;width:14px;height:14px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);
+  font-size:10px;line-height:14px;text-align:center;opacity:0;cursor:pointer;outline-offset:0}
+.pvsw:hover .del,.pvsw:focus-within .del{opacity:1}
+@media (hover:none){.pvsel .pvsw .del{opacity:1}}
+.pvsel .pvadd{border:1px dashed var(--muted);background:transparent;color:var(--muted);font-size:14px;line-height:1}
+.pvsel .pvadd:hover{border-color:var(--accent);color:var(--accent)}
 
 /* film strip */
 .strip{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface);align-items:center}
@@ -227,6 +234,7 @@ fieldset:disabled{opacity:.45}
       <button class="btn icon" id="undo" title="되돌리기 (Ctrl+Z)" aria-label="되돌리기"><svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
       <button class="btn icon" id="redo" title="다시 실행 (Ctrl+Shift+Z)" aria-label="다시 실행"><svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
       <button class="btn" id="resetAll" title="이 사진의 자르기·크기와 모든 효과를 처음 상태로">초기화</button>
+      <button class="btn" id="replaceTop" title="편집 결과로 원래 파일을 덮어씁니다 (두 번 눌러 확인)">원본 덮어쓰기</button>
       <button class="btn primary" id="saveTop">저장</button>
     </div>
   </header>
@@ -254,7 +262,9 @@ fieldset:disabled{opacity:.45}
           <button class="pv-c" data-pv="checker" aria-label="기본" title="기본 (투명 부분은 체크무늬)"></button>
           <button class="pv-l" data-pv="light" aria-label="흰색" title="흰색"></button>
           <button class="pv-d" data-pv="dark" aria-label="검정" title="검정"></button>
+          <span id="pvSaved" style="display:contents"></span>
           <input type="color" id="pvc" value="#7a8699" aria-label="작업 화면 바탕색 직접 고르기" title="직접 고르기">
+          <button class="pvadd" id="pvSave" title="지금 작업 화면 색을 목록에 저장" aria-label="지금 작업 화면 색 저장">+</button>
         </span>
       </footer>
       <div class="strip" id="strip" aria-label="사진 목록"></div>
@@ -461,7 +471,21 @@ let hist = [], hi = -1;
 
 const freshSt = it => ({ crop: { x: 0, y: 0, w: it.srcW, h: it.srcH }, outW: it.srcW, outH: it.srcH, lock: true, mask: false });
 const snap = () => JSON.stringify({ G, per: items.map(i => [i.id, i.st]) });
+function saveColors() {
+  try { localStorage.setItem("lightbox-colors", JSON.stringify({ border: G.border.color, bg: G.bg.color, shadow: G.shadow.color, jbg: E.jbg })); } catch (e) {}
+}
+function loadColors() {
+  try {
+    const c = JSON.parse(localStorage.getItem("lightbox-colors") || "null"); if (!c) return;
+    const ok = v => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
+    if (ok(c.border)) G.border.color = c.border;
+    if (ok(c.bg)) G.bg.color = c.bg;
+    if (ok(c.shadow)) G.shadow.color = c.shadow;
+    if (ok(c.jbg)) { E.jbg = c.jbg; document.getElementById("jbg").value = c.jbg; }
+  } catch (e) {}
+}
 function commit() {
+  saveColors();
   const s = snap();
   if (hist[hi] === s) return;
   hist = hist.slice(0, hi + 1); hist.push(s);
@@ -660,7 +684,9 @@ function updateInfo(full) {
   add(crop.active ? "자르기 중" : `화면 ${fitPct}%`);
 }
 /* work-area colour: paints the whole stage; transparent parts of the photo show it too (checker only in the default) */
+let pvCur = "checker";
 function setPreviewBg(v) {
+  pvCur = v;
   const col = v === "light" ? "#ffffff" : v === "dark" ? "#121316" : /^#[0-9a-f]{6}$/i.test(v) ? v : "";
   $("#stage").dataset.pv = col ? "custom" : "checker";
   viewport.style.backgroundColor = col;
@@ -669,10 +695,33 @@ function setPreviewBg(v) {
   if (col && !["light", "dark"].includes(v)) $("#pvc").value = col;
   try { localStorage.setItem("lightbox-pv", v); } catch (e) {}
 }
-$$(".pvsel button").forEach(b => b.addEventListener("click", () => setPreviewBg(b.dataset.pv)));
+$$(".pvsel button[data-pv]").forEach(b => b.addEventListener("click", () => setPreviewBg(b.dataset.pv)));
 $("#pvc").addEventListener("input", e => setPreviewBg(e.target.value));
+const isHex = v => typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v);
+let pvSaved = [];
+try { pvSaved = JSON.parse(localStorage.getItem("lightbox-pv-saved") || "[]").filter(isHex); } catch (e) { pvSaved = []; }
+const savePvList = () => { try { localStorage.setItem("lightbox-pv-saved", JSON.stringify(pvSaved)); } catch (e) {} };
+function renderPvSaved() {
+  const box = $("#pvSaved"); box.textContent = "";
+  for (const c of pvSaved) {
+    const w = document.createElement("span"); w.className = "pvsw";
+    const b = document.createElement("button"); b.dataset.pv = c; b.style.background = c;
+    b.title = `저장한 색 ${c.toUpperCase()}`; b.setAttribute("aria-label", `저장한 작업 화면 색 ${c}`);
+    b.addEventListener("click", () => setPreviewBg(c));
+    const d = document.createElement("button"); d.className = "del"; d.textContent = "×"; d.title = "이 색 지우기"; d.setAttribute("aria-label", `${c} 지우기`);
+    d.addEventListener("click", e => { e.stopPropagation(); pvSaved = pvSaved.filter(x => x !== c); savePvList(); renderPvSaved(); });
+    w.append(b, d); box.appendChild(w);
+  }
+  setPreviewBg(pvCur);
+}
+$("#pvSave").addEventListener("click", () => {
+  const col = pvCur === "light" ? "#ffffff" : pvCur === "dark" ? "#121316" : isHex(pvCur) ? pvCur.toLowerCase() : $("#pvc").value.toLowerCase();
+  if (!pvSaved.includes(col)) { pvSaved.push(col); if (pvSaved.length > 8) pvSaved.shift(); savePvList(); }
+  pvCur = col; renderPvSaved();
+  toast(`작업 화면 색 ${col.toUpperCase()}를 저장했습니다. 다음에 열어도 남아 있습니다.`);
+});
 let pv0 = "checker"; try { pv0 = localStorage.getItem("lightbox-pv") || "checker"; } catch (e) {}
-setPreviewBg(pv0);
+pvCur = pv0; renderPvSaved();
 
 /* ============ crop ============ */
 const crop = { active: false, draft: null, ratio: null, ratioKey: "free", ds: 1 };
@@ -1291,12 +1340,20 @@ function updateDest() {
       : "이 브라우저(또는 이 화면)에서는 파일에 직접 쓸 수 없어, 원래 파일과 같은 이름으로 내려받습니다. 받은 파일로 원본을 바꿔 넣으세요.";
     $("#replaceHint").textContent = `원래 형식(${f ? FMT_NAME[f] : "—"})과 이름 그대로 저장합니다. ${where} JPG는 촬영 정보(EXIF)를 유지하고, 되돌릴 수 없으니 필요하면 원본을 따로 보관하세요.`;
   }
+  const rt = $("#replaceTop");
+  if (armedBtn !== rt) rt.textContent = items.length > 1 ? `원본 덮어쓰기 · ${items.length}장` : "원본 덮어쓰기";
+  rt.disabled = saving || !items.some(it => it.file);
+  rt.title = rt.disabled && !saving ? "예시 이미지에는 원본 파일이 없습니다. 사진을 추가하면 쓸 수 있습니다." : "편집 결과로 원래 파일을 덮어씁니다 (두 번 눌러 확인)";
   if (!armed) {
     $("#save").textContent = rp ? "원본에 덮어쓰기" : items.length > 1 ? "이 사진 저장" : "저장";
     $("#saveAll").textContent = rp ? `모두 원본에 덮어쓰기 · ${items.length}장` : `모두 저장 · ${items.length}장 (ZIP)`;
   }
 }
-function disarm() { if (armed) { clearTimeout(armed); armed = 0; $("#save").classList.remove("danger"); $("#saveAll").classList.remove("danger"); } }
+let armedBtn = null;
+function disarm() {
+  if (armed) { clearTimeout(armed); armed = 0; }
+  if (armedBtn) { armedBtn.classList.remove("danger"); armedBtn = null; }
+}
 $$('input[name="fmt"]').forEach(r => r.addEventListener("change", () => {
   E.fmt = r.value;
   $("#qField").hidden = E.fmt === "png"; $("#jbgField").hidden = E.fmt !== "jpeg";
@@ -1306,7 +1363,7 @@ $$('input[name="fmt"]').forEach(r => r.addEventListener("change", () => {
 }));
 $("#q").addEventListener("input", e => { E.quality = +e.target.value; $("#qn").value = E.quality; });
 $("#qn").addEventListener("input", e => { const v = parseFloat(e.target.value); if (isFinite(v)) { E.quality = clamp(Math.round(v), 40, 100); $("#q").value = E.quality; } });
-$("#jbg").addEventListener("input", e => { E.jbg = e.target.value; });
+$("#jbg").addEventListener("input", e => { E.jbg = e.target.value; saveColors(); });
 
 async function encode(it, fmtOverride) {
   const fmt = fmtOverride || E.fmt;
@@ -1373,7 +1430,7 @@ async function deliver(filename, blob) {
 }
 const fmtSize = n => n > 1048576 ? (n / 1048576).toFixed(1) + "MB" : Math.max(1, Math.round(n / 1024)) + "KB";
 let saving = false;
-function lockSave(on) { saving = on; ["#save", "#saveTop", "#saveAll"].forEach(s => $(s).disabled = on); }
+function lockSave(on) { saving = on; ["#save", "#saveTop", "#saveAll"].forEach(s => $(s).disabled = on); updateDest(); }
 async function saveOne() {
   if (!cur || saving || masking) return;
   if (crop.active) applyCrop();
@@ -1479,27 +1536,27 @@ async function replaceItems(list) {
   if (msg.length) toast(msg.join(" · ") + ".", !!(res.denied || res.skipped.length || res.failed) && !res.written && !res.downloaded);
 }
 /* overwriting can't be undone, so the first press only arms the button */
-function guarded(btn, run) {
-  if (dest !== "replace") { run(); return; }
-  if (armed) { disarm(); updateDest(); run(); return; }
-  btn.classList.add("danger"); btn.textContent = "한 번 더 누르면 덮어씁니다";
+function guarded(btn, run, always) {
+  if (!always && dest !== "replace") { run(); return; }
+  if (armed && armedBtn === btn) { disarm(); updateDest(); run(); return; }
+  disarm(); updateDest();
+  armedBtn = btn; btn.classList.add("danger"); btn.textContent = "한 번 더 누르면 덮어씁니다";
   armed = setTimeout(() => { disarm(); updateDest(); }, 4000);
 }
 $("#save").addEventListener("click", e => guarded(e.currentTarget, () => dest === "replace" ? replaceItems([cur]) : saveOne()));
 $("#saveAll").addEventListener("click", e => guarded(e.currentTarget, () => dest === "replace" ? replaceItems(items.slice()) : saveAll()));
-$("#saveTop").addEventListener("click", () => {
-  if (dest === "replace") { $("#saveAll").hidden ? $("#save").click() : $("#saveAll").click(); $("#save").scrollIntoView({ block: "nearest" }); return; }
-  items.length > 1 ? saveAll() : saveOne();
-});
+$("#saveTop").addEventListener("click", () => items.length > 1 ? saveAll() : saveOne());
+$("#replaceTop").addEventListener("click", e => guarded(e.currentTarget, () => replaceItems(items.length > 1 ? items.slice() : [cur]), true));
 
 /* ============ misc ============ */
 $("#undo").addEventListener("click", undo);
 $("#redo").addEventListener("click", redo);
 $("#resetAll").addEventListener("click", () => {
   if (crop.active) exitCrop();
-  const keepShadow = { y: G.shadow.y, blur: G.shadow.blur };
+  const keepShadow = { y: G.shadow.y, blur: G.shadow.blur, color: G.shadow.color };
+  const keepCol = { border: G.border.color, bg: G.bg.color };
   for (const k in G0) G[k] = JSON.parse(JSON.stringify(G0[k]));
-  Object.assign(G.shadow, keepShadow);
+  Object.assign(G.shadow, keepShadow); G.border.color = keepCol.border; G.bg.color = keepCol.bg;
   cur.st = freshSt(cur); P = cur.st; activePreset = null; markPresets();
   syncUI(); renderStrip(); scheduleRender(); commit();
   toast("이 사진과 공통 효과를 처음 상태로 돌렸습니다. 되돌리기로 취소할 수 있습니다.");
@@ -1556,6 +1613,7 @@ function makeSample() {
   return c;
 }
 renderPresets();
+loadColors();
 function addSample() {
   const it = makeItem(makeSample(), "sample-sunset", true, null);
   items = [it]; hist = []; hi = -1;
