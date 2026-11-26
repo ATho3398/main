@@ -72,8 +72,6 @@ button,input,select{font:inherit;color:inherit}
   background-color:var(--check-a);
   background-image:conic-gradient(var(--check-b) 25%,transparent 0 50%,var(--check-b) 0 75%,transparent 0);
   background-size:16px 16px;box-shadow:0 0 0 1px var(--line)}
-.stage[data-pv="light"] #view{background:var(--pv-light)}
-.stage[data-pv="dark"] #view{background:var(--pv-dark)}
 .stage-info{display:flex;flex-wrap:wrap;align-items:center;gap:4px 16px;padding:8px 14px;border-top:1px solid var(--line);
   font-family:var(--font-mono);font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums;background:var(--surface)}
 .stage-info .tag{color:var(--accent);font-family:var(--font-body);font-weight:500}
@@ -82,6 +80,8 @@ button,input,select{font:inherit;color:inherit}
 .pvsel button[aria-pressed="true"]{outline:2px solid var(--accent);outline-offset:1px}
 .pv-c{background-color:var(--check-a);background-image:conic-gradient(var(--check-b) 25%,transparent 0 50%,var(--check-b) 0 75%,transparent 0);background-size:8px 8px}
 .pv-l{background:var(--pv-light)}.pv-d{background:var(--pv-dark)}
+.pvsel input[type=color]{inline-size:24px;block-size:20px;padding:1px;border-radius:4px}
+.viewport{transition:background-color .15s}
 
 /* film strip */
 .strip{display:flex;gap:8px;overflow-x:auto;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface);align-items:center}
@@ -188,6 +188,18 @@ fieldset:disabled{opacity:.45}
 .seg input:checked+span{color:var(--accent);font-weight:500}
 .seg label:has(input:checked){background:var(--accent-soft)}
 .seg label:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:-2px}
+.presets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.preset{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;padding:8px 3px 7px;border:1px solid var(--line);border-radius:8px;
+  background:var(--surface);cursor:pointer;font-size:11.5px;line-height:1.25;text-align:center;color:var(--ink);min-width:0}
+.preset:hover{border-color:var(--muted)}
+.preset[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.preset svg{width:44px;height:44px;display:block;color:var(--muted)}
+.preset span.n{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.preset .x{position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:rgba(10,11,14,.65);color:#fff;font-size:11px;line-height:16px;opacity:0}
+.preset:hover .x,.preset:focus-visible .x{opacity:1}
+@media (hover:none){.preset .x{opacity:1}}
+.preset.add{border-style:dashed;color:var(--muted)}
+.preset.add:hover{border-color:var(--accent);color:var(--accent)}
 .status{font-size:12px;padding:7px 10px;border-radius:6px;background:var(--soft);color:var(--muted)}
 .status.on{background:var(--accent-soft);color:var(--ink)}
 
@@ -237,16 +249,24 @@ fieldset:disabled{opacity:.45}
       <div class="busy" id="busy" hidden><b id="busyT"></b><div class="meter" id="busyM"><i id="busyBar"></i></div><small id="busyS"></small></div>
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
       <footer class="stage-info"><span id="info" style="display:contents"></span>
-        <span class="pvsel" role="group" aria-label="미리보기 바탕">바탕
-          <button class="pv-c" data-pv="checker" aria-label="체크무늬" title="체크무늬 (투명 부분 확인)"></button>
+        <span class="pvsel" role="group" aria-label="작업 화면 바탕색">작업 화면
+          <button class="pv-c" data-pv="checker" aria-label="기본" title="기본 (투명 부분은 체크무늬)"></button>
           <button class="pv-l" data-pv="light" aria-label="흰색" title="흰색"></button>
           <button class="pv-d" data-pv="dark" aria-label="검정" title="검정"></button>
+          <input type="color" id="pvc" value="#7a8699" aria-label="작업 화면 바탕색 직접 고르기" title="직접 고르기">
         </span>
       </footer>
       <div class="strip" id="strip" aria-label="사진 목록"></div>
     </section>
 
     <aside class="panel" aria-label="편집 도구">
+      <!-- presets -->
+      <section class="sec">
+        <div class="sec-h"><h2>프리셋 <span class="scope" data-scope>모든 사진</span></h2><span class="sum" id="sumPreset"></span></div>
+        <div class="presets" id="presets"></div>
+        <p class="hint">누르면 테두리·그림자·투명도·배경이 한 번에 바뀝니다. 자르기·크기·마스크는 그대로 둡니다.</p>
+      </section>
+
       <!-- crop -->
       <section class="sec">
         <div class="sec-h"><h2>자르기 <span class="scope each" data-scope>사진별</span></h2><span class="sum" id="sumCrop"></span></div>
@@ -383,7 +403,7 @@ fieldset:disabled{opacity:.45}
           </div>
         </fieldset>
         <div class="field"><label for="pad">여백</label><input type="range" id="pad" min="0" max="300" step="1" data-bind="pad"><input class="num" type="number" min="0" step="1" data-bind="pad" aria-label="여백 (px)"></div>
-        <p class="hint">배경을 끄면 투명하게 저장됩니다(PNG·WebP). 여백은 사진 둘레에 공간을 더합니다.</p>
+        <p class="hint">배경색은 여백, 그림자 주변, 마스크로 지운 부분에 칠해집니다. 끄면 투명하게 저장됩니다(PNG·WebP). 화면만 바꾸려면 미리보기 아래 ‘작업 화면’ 색을 고르세요.</p>
       </section>
 
       <!-- export -->
@@ -444,7 +464,7 @@ function restore(i) {
   hi = i; const o = JSON.parse(hist[hi]);
   for (const k in o.G) G[k] = o.G[k];
   for (const [id, st] of o.per) { const it = items.find(x => x.id === id); if (it) it.st = st; }
-  P = cur.st; syncUI(); renderStrip(); scheduleRender(); updateHistButtons();
+  P = cur.st; syncUI(); renderStrip(); scheduleRender(); updateHistButtons(); clearPreset();
 }
 function undo() { if (crop.active) { exitCrop(); return; } if (hi > 0) restore(hi - 1); }
 function redo() { if (!crop.active && hi < hist.length - 1) restore(hi + 1); }
@@ -631,12 +651,18 @@ function updateInfo(full) {
   add(`결과 ${full.W}×${full.H}px`);
   add(crop.active ? "자르기 중" : `화면 ${fitPct}%`);
 }
+/* work-area colour: paints the whole stage; transparent parts of the photo show it too (checker only in the default) */
 function setPreviewBg(v) {
-  $("#stage").dataset.pv = v;
+  const col = v === "light" ? "#ffffff" : v === "dark" ? "#121316" : /^#[0-9a-f]{6}$/i.test(v) ? v : "";
+  $("#stage").dataset.pv = col ? "custom" : "checker";
+  viewport.style.backgroundColor = col;
+  view.style.background = col ? "transparent" : "";
   $$(".pvsel button").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.pv === v)));
+  if (col && !["light", "dark"].includes(v)) $("#pvc").value = col;
   try { localStorage.setItem("lightbox-pv", v); } catch (e) {}
 }
 $$(".pvsel button").forEach(b => b.addEventListener("click", () => setPreviewBg(b.dataset.pv)));
+$("#pvc").addEventListener("input", e => setPreviewBg(e.target.value));
 let pv0 = "checker"; try { pv0 = localStorage.getItem("lightbox-pv") || "checker"; } catch (e) {}
 setPreviewBg(pv0);
 
@@ -812,6 +838,8 @@ document.addEventListener("input", e => {
   const v = readBound(el); if (v === null) return;
   setP(G, p, v);
   $$(`[data-bind="${p}"]`).forEach(o => { if (o !== el) writeBound(o, v); });
+  if (p === "bg.on" && v) ensureBgVisible();
+  if (!p.startsWith("mask.")) clearPreset();
   syncDisabled(); updateSummaries(); updateMaxes(); scheduleRender();
 });
 document.addEventListener("change", e => { if (e.target.dataset && e.target.dataset.bind && cur) commit(); });
@@ -819,9 +847,16 @@ $$("[data-sw]").forEach(b => b.addEventListener("click", () => {
   if (b.dataset.sw === "border") {
     G.border.color = b.dataset.c;
     if (G.border.width === 0) G.border.width = Math.max(4, Math.round(Math.min(P.outW, P.outH) * 0.03));
-  } else { G.bg.color = b.dataset.c; G.bg.on = true; }
+  } else { G.bg.color = b.dataset.c; G.bg.on = true; ensureBgVisible(); }
+  clearPreset();
   syncUI(); scheduleRender(); commit();
 }));
+function ensureBgVisible() {
+  if (G.pad > 0) return;
+  G.pad = Math.max(10, Math.round(Math.min(P.outW, P.outH) * 0.06));
+  $$('[data-bind="pad"]').forEach(o => writeBound(o, G.pad));
+  toast(`배경색이 보이도록 여백 ${G.pad}px를 넣었습니다. 여백에서 조절할 수 있습니다.`);
+}
 function syncDisabled() {
   $("#shFields").disabled = !G.shadow.on;
   $("#bgFields").disabled = !G.bg.on;
@@ -872,6 +907,126 @@ function updateSummaries() {
   const g = geom(1, P);
   setSum("#sumExport", `${g.W}×${g.H}`);
 }
+
+/* ============ presets ============
+   Values are stored relative to the photo's short side so a preset looks the same on any size. */
+const PBASE = () => ({ border: { w: 0, color: "#ffffff", r: 0, shape: "rect" }, shadow: { on: false, x: 0, y: 0.02, blur: 0.04, color: "#000000", alpha: 30 },
+  opacity: 100, bg: { on: false, color: "#ffffff" }, pad: 0 });
+function mkP(o) {
+  const b = PBASE();
+  for (const k in o) b[k] = (typeof o[k] === "object") ? { ...b[k], ...o[k] } : o[k];
+  return b;
+}
+const PRESETS = [
+  { id: "none", name: "효과 없음", spec: mkP({}) },
+  { id: "white", name: "흰 테두리", spec: mkP({ border: { w: 0.035, color: "#ffffff" } }) },
+  { id: "line", name: "검정 라인", spec: mkP({ border: { w: 0.012, color: "#111111" } }) },
+  { id: "round", name: "둥근 모서리", spec: mkP({ border: { r: 0.08 } }) },
+  { id: "shadow", name: "그림자", spec: mkP({ shadow: { on: true, y: 0.02, blur: 0.045, alpha: 30 } }) },
+  { id: "card", name: "둥근 카드", spec: mkP({ border: { r: 0.05 }, shadow: { on: true, y: 0.025, blur: 0.05, alpha: 30 } }) },
+  { id: "float", name: "떠 있는 카드", spec: mkP({ border: { r: 0.04 }, shadow: { on: true, y: 0.035, blur: 0.07, alpha: 32 }, bg: { on: true, color: "#f1efe9" }, pad: 0.09 }) },
+  { id: "frame", name: "액자", spec: mkP({ border: { w: 0.05, color: "#ffffff" }, shadow: { on: true, y: 0.015, blur: 0.03, alpha: 40 }, bg: { on: true, color: "#dfe6ee" }, pad: 0.08 }) },
+  { id: "dark", name: "다크 매트", spec: mkP({ border: { w: 0.006, color: "#ffffff" }, bg: { on: true, color: "#1b1d22" }, pad: 0.07 }) },
+  { id: "fade", name: "반투명", spec: mkP({ opacity: 60 }) },
+  { id: "ghost", name: "흐리게", spec: mkP({ opacity: 30 }) },
+  { id: "sticker", name: "스티커", spec: mkP({ border: { w: 0.03, color: "#ffffff", shape: "outline" }, shadow: { on: true, y: 0.015, blur: 0.03, alpha: 35 } }), needsMask: true }
+];
+let userPresets = [];
+try { userPresets = JSON.parse(localStorage.getItem("lightbox-presets") || "[]"); if (!Array.isArray(userPresets)) userPresets = []; } catch (e) { userPresets = []; }
+const saveUserPresets = () => { try { localStorage.setItem("lightbox-presets", JSON.stringify(userPresets)); } catch (e) {} };
+let activePreset = null, iconSeq = 0;
+const esc = v => String(v).replace(/[^#0-9a-fA-F]/g, "");
+
+/* Draws what the preset does: background, border, rounded corners, shadow, opacity, sticker outline. */
+function presetIcon(sp) {
+  const n = ++iconSeq, padded = sp.bg.on || sp.pad > 0;
+  const box = padded ? 22 : 30, o = (40 - box) / 2;
+  const bw = sp.border.w > 0 ? clamp(sp.border.w * 70, 1.4, 4) : 0;
+  const rx = Math.min(box / 2, sp.border.r * box * 1.4);
+  const sticker = sp.border.shape === "outline";
+  let d = `<svg viewBox="0 0 40 40" aria-hidden="true"><defs>`;
+  d += `<pattern id="pk${n}" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="2" height="2" fill="currentColor" fill-opacity=".28"/><rect x="2" y="2" width="2" height="2" fill="currentColor" fill-opacity=".28"/></pattern>`;
+  if (sp.shadow.on) d += `<filter id="sh${n}" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="${sp.shadow.y > 0.03 ? 2.4 : 1.6}" stdDeviation="${sp.shadow.blur > 0.06 ? 2.2 : 1.5}" flood-color="#000" flood-opacity="${clamp(sp.shadow.alpha / 100 * 1.6, .25, .7)}"/></filter>`;
+  const ix = o + bw, iy = o + bw, iw = box - 2 * bw, irx = Math.max(0, rx - bw);
+  if (sticker) d += `<clipPath id="cp${n}"><path d="M20 ${o + 3} c5 0 8 4 8 8 c0 3-2 5-3 6 c4 1 7 4 7 9 v${box / 2 - 6} h-24 v-${box / 2 - 6} c0-5 3-8 7-9 c-1-1-3-3-3-6 c0-4 3-8 8-8z"/></clipPath>`;
+  else d += `<clipPath id="cp${n}"><rect x="${ix}" y="${iy}" width="${iw}" height="${iw}" rx="${irx}"/></clipPath>`;
+  d += `</defs>`;
+  if (sp.bg.on) d += `<rect x="2" y="2" width="36" height="36" rx="4" fill="#${esc(sp.bg.color).replace("#", "")}" stroke="currentColor" stroke-opacity=".35" stroke-width=".8"/>`;
+  else if (padded) d += `<rect x="2" y="2" width="36" height="36" rx="4" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width=".8" stroke-dasharray="2 2"/>`;
+  d += `<g${sp.shadow.on ? ` filter="url(#sh${n})"` : ""}>`;
+  const photo = `<g clip-path="url(#cp${n})"><rect x="0" y="0" width="40" height="40" fill="#a9bedb"/><circle cx="${o + box * 0.7}" cy="${o + box * 0.32}" r="${box * 0.11}" fill="#f6cf74"/>` +
+    `<path d="M0 ${o + box * 0.86} L${o + box * 0.3} ${o + box * 0.5} L${o + box * 0.52} ${o + box * 0.74} L${o + box * 0.72} ${o + box * 0.56} L40 ${o + box * 0.9} V40 H0Z" fill="#4f6489"/></g>`;
+  if (sticker) {
+    d += `<g clip-path="url(#cp${n})" transform="translate(20 ${20}) scale(1.16) translate(-20 -20)"><rect width="40" height="40" fill="#${esc(sp.border.color).replace("#", "")}"/></g>`;
+    d += `<path d="M20 ${o + 3} c5 0 8 4 8 8 c0 3-2 5-3 6 c4 1 7 4 7 9 v${box / 2 - 6} h-24 v-${box / 2 - 6} c0-5 3-8 7-9 c-1-1-3-3-3-6 c0-4 3-8 8-8z" transform="translate(20 20) scale(1.16) translate(-20 -20)" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width=".6"/>`;
+    d += photo;
+  } else {
+    if (bw) d += `<rect x="${o}" y="${o}" width="${box}" height="${box}" rx="${rx}" fill="#${esc(sp.border.color).replace("#", "")}"/>`;
+    if (sp.opacity < 100) d += `<rect x="${ix}" y="${iy}" width="${iw}" height="${iw}" rx="${irx}" fill="url(#pk${n})"/>`;
+    d += `<g opacity="${sp.opacity / 100}">${photo}</g>`;
+    d += `<rect x="${o}" y="${o}" width="${box}" height="${box}" rx="${rx}" fill="none" stroke="currentColor" stroke-opacity=".35" stroke-width=".6"/>`;
+  }
+  d += `</g></svg>`;
+  return d;
+}
+function specFromG() {
+  const base = Math.max(1, Math.min(P.outW, P.outH)), r = v => Math.round(v / base * 10000) / 10000;
+  return { border: { w: r(G.border.width), color: G.border.color, r: r(G.border.radius), shape: G.border.shape },
+    shadow: { on: G.shadow.on, x: r(G.shadow.x), y: r(G.shadow.y), blur: r(G.shadow.blur), color: G.shadow.color, alpha: G.shadow.alpha },
+    opacity: G.opacity, bg: { ...G.bg }, pad: r(G.pad) };
+}
+function applyPreset(pr) {
+  if (crop.active) exitCrop();
+  const sp = pr.spec, base = Math.max(1, Math.min(P.outW, P.outH)), px = v => Math.round(v * base);
+  G.border = { width: px(sp.border.w), color: sp.border.color, radius: px(sp.border.r), shape: sp.border.shape };
+  G.shadow = { on: sp.shadow.on, x: px(sp.shadow.x), y: px(sp.shadow.y), blur: px(sp.shadow.blur), color: sp.shadow.color, alpha: sp.shadow.alpha };
+  G.opacity = sp.opacity; G.bg = { ...sp.bg }; G.pad = px(sp.pad);
+  activePreset = pr.id;
+  syncUI(); scheduleRender(); commit(); markPresets();
+  if (pr.needsMask && !items.some(it => it.st.mask && it.maskRaw))
+    toast("스티커 윤곽선은 ‘자동 마스크’로 배경을 지운 사진에서 피사체를 따라 그려집니다. 지금은 사각형으로 보입니다.");
+  else toast(items.length > 1 ? `‘${pr.name}’ 프리셋을 ${items.length}장 모두에 적용했습니다.` : `‘${pr.name}’ 프리셋을 적용했습니다.`);
+}
+function renderPresets() {
+  const box = $("#presets"); box.textContent = "";
+  const tile = (pr, removable) => {
+    const b = document.createElement("button");
+    b.className = "preset"; b.dataset.preset = pr.id; b.title = pr.name + (removable ? " (내 프리셋)" : "");
+    b.innerHTML = presetIcon(pr.spec);
+    const nm = document.createElement("span"); nm.className = "n"; nm.textContent = pr.name; b.appendChild(nm);
+    if (removable) {
+      const x = document.createElement("span"); x.className = "x"; x.textContent = "×"; x.title = "프리셋 지우기"; x.setAttribute("aria-hidden", "true"); b.appendChild(x);
+      b.addEventListener("keydown", e => { if (e.key === "Delete" || e.key === "Backspace") { e.preventDefault(); delUser(pr.id); } });
+      b.addEventListener("click", e => { if (e.target === x) delUser(pr.id); else applyPreset(pr); });
+    } else b.addEventListener("click", () => applyPreset(pr));
+    box.appendChild(b);
+  };
+  PRESETS.forEach(pr => tile(pr, false));
+  userPresets.forEach(pr => tile(pr, true));
+  const add = document.createElement("button"); add.className = "preset add"; add.title = "지금 테두리·그림자·투명도·배경 설정을 프리셋으로 저장";
+  add.innerHTML = `<svg viewBox="0 0 40 40" aria-hidden="true"><rect x="6" y="6" width="28" height="28" rx="5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2.5"/><path d="M20 13v14M13 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`;
+  const nm = document.createElement("span"); nm.className = "n"; nm.textContent = "설정 저장"; add.appendChild(nm);
+  add.addEventListener("click", () => {
+    let k = userPresets.length + 1; while (userPresets.some(u => u.name === `내 프리셋 ${k}`)) k++;
+    const pr = { id: "u" + Date.now(), name: `내 프리셋 ${k}`, spec: specFromG() };
+    userPresets.push(pr); saveUserPresets(); activePreset = pr.id; renderPresets();
+    toast(`‘${pr.name}’로 저장했습니다. 이 브라우저에 보관됩니다.`);
+  });
+  box.appendChild(add);
+  markPresets();
+}
+function delUser(id) {
+  const pr = userPresets.find(u => u.id === id);
+  userPresets = userPresets.filter(u => u.id !== id); saveUserPresets();
+  if (activePreset === id) activePreset = null;
+  renderPresets(); if (pr) toast(`‘${pr.name}’를 지웠습니다.`);
+}
+function markPresets() {
+  $$("#presets [data-preset]").forEach(b => b.setAttribute("aria-pressed", String(b.dataset.preset === activePreset)));
+  const all = PRESETS.concat(userPresets), pr = all.find(x => x.id === activePreset);
+  setSum("#sumPreset", pr ? pr.name : "직접 설정", !!pr);
+}
+function clearPreset() { if (activePreset !== null) { activePreset = null; markPresets(); } }
 
 /* ============ auto mask ============ */
 const MODELS = {
@@ -1210,7 +1365,7 @@ $("#resetAll").addEventListener("click", () => {
   const keepShadow = { y: G.shadow.y, blur: G.shadow.blur };
   for (const k in G0) G[k] = JSON.parse(JSON.stringify(G0[k]));
   Object.assign(G.shadow, keepShadow);
-  cur.st = freshSt(cur); P = cur.st;
+  cur.st = freshSt(cur); P = cur.st; activePreset = null; markPresets();
   syncUI(); renderStrip(); scheduleRender(); commit();
   toast("이 사진과 공통 효과를 처음 상태로 돌렸습니다. 되돌리기로 취소할 수 있습니다.");
 });
@@ -1265,6 +1420,7 @@ function makeSample() {
   }
   return c;
 }
+renderPresets();
 function addSample() {
   const it = makeItem(makeSample(), "sample-sunset", true, null);
   items = [it]; hist = []; hi = -1;
